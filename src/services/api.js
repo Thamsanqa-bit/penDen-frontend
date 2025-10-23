@@ -1,10 +1,25 @@
-import axios from 'axios';
+import axios from "axios";
 
 const API = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api/',
+  baseURL: "http://127.0.0.1:8000/api/",
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+// Optional — attach token automatically if logged in
+API.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Token ${token}`;
+  }
+  return config;
 });
 
 export default API;
+
+
+
 
 
 
