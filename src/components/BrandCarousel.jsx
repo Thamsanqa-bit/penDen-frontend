@@ -2,6 +2,7 @@ export default function BrandCarousel() {
     const brands = [
     
       { name: "Nike", logo: "https://upload.wikimedia.org/wikipedia/commons/a/a6/Logo_NIKE.svg" },
+      { name: "Kgafatech", logo: "https://kgafatech.tech/static/images/kgafatech.png" },
       { name: "Reebok", logo: "https://upload.wikimedia.org/wikipedia/commons/5/53/Reebok_2019_logo.svg" }
     ];
   
