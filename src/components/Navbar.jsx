@@ -8,7 +8,7 @@ export default function Navbar() {
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
-  const [user, setUser] = useState(null); // ✅ Store logged-in user info
+  const [user, setUser] = useState(null); //Store logged-in user info
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -24,7 +24,7 @@ export default function Navbar() {
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  // ✅ LOGIN HANDLER
+  //LOGIN HANDLER
   const handleLogin = async (e) => {
     e.preventDefault();
     setMessage({ text: "", type: "" });
@@ -52,7 +52,7 @@ export default function Navbar() {
     }
   };
 
-  // ✅ REGISTER HANDLER
+  //REGISTER HANDLER
   const handleRegister = async (e) => {
     e.preventDefault();
     setMessage({ text: "", type: "" });
@@ -60,7 +60,7 @@ export default function Navbar() {
       const res = await API.post("register/", formData);
       if (res.status === 201 || res.data.status === "success") {
         localStorage.setItem("token", res.data.token);
-        localStorage.setItem("username", formData.username); // ✅ Save username locally
+        localStorage.setItem("username", formData.username); // Save username locally
         setIsLoggedIn(true);
         setUser({ username: formData.username });
         setMessage({ text: "Registration successful!", type: "success" });

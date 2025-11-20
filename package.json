@@ -1,5 +1,6 @@
 {
   "name": "frontend-pen-den",
+  "proxy": "https://penden-backend.onrender.com",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
