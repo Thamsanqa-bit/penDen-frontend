@@ -8,6 +8,7 @@ export default function Navbar() {
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
+  const [user, setUser] = useState(null); // ✅ Store logged-in user info
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -18,7 +19,7 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [message, setMessage] = useState({ text: "", type: "" });
 
-  const navigate = useNavigate(); // ✅ for redirect
+  const navigate = useNavigate();
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -32,9 +33,12 @@ export default function Navbar() {
         username: formData.username,
         password: formData.password,
       });
+
       if (res.data.status === "success") {
         localStorage.setItem("token", res.data.token);
+        localStorage.setItem("username", formData.username); // ✅ Save username locally
         setIsLoggedIn(true);
+        setUser({ username: formData.username });
         setMessage({ text: "Login successful!", type: "success" });
         setTimeout(() => setShowLogin(false), 1000);
       } else {
@@ -56,7 +60,9 @@ export default function Navbar() {
       const res = await API.post("register/", formData);
       if (res.status === 201 || res.data.status === "success") {
         localStorage.setItem("token", res.data.token);
+        localStorage.setItem("username", formData.username); // ✅ Save username locally
         setIsLoggedIn(true);
+        setUser({ username: formData.username });
         setMessage({ text: "Registration successful!", type: "success" });
         setTimeout(() => setShowRegister(false), 1500);
       } else {
@@ -73,11 +79,15 @@ export default function Navbar() {
     }
   };
 
+  // ✅ LOGOUT
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("username");
     setIsLoggedIn(false);
+    setUser(null);
   };
 
+  // ✅ SEARCH HANDLER
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     try {
@@ -87,23 +97,42 @@ export default function Navbar() {
     }
   };
 
+  // ✅ FETCH USER DETAILS ON LOAD
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token) setIsLoggedIn(true);
+    const savedUsername = localStorage.getItem("username");
+
+    if (token) {
+      setIsLoggedIn(true);
+      if (savedUsername) {
+        setUser({ username: savedUsername });
+      } else {
+        // optional: fetch from backend
+        API.get("profile/", {
+          headers: { Authorization: `Token ${token}` },
+        })
+          .then((res) => setUser(res.data))
+          .catch(() => setUser(null));
+      }
+    }
   }, []);
 
   return (
     <header className="bg-white border-b shadow-sm sticky top-0 z-50">
       <nav className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex items-center justify-between">
-        {/* 🌿 Logo now redirects to Home */}
-        <h1
+        {/* 🌿 Logo */}
+        <div
           onClick={() => navigate("/")}
-          className="text-2xl font-extrabold text-green-700 cursor-pointer hover:text-green-800 transition"
+          className="cursor-pointer flex items-center"
         >
-          PenDen.com
-        </h1>
+          <img
+            src="https://penden-s3.s3.us-east-2.amazonaws.com/logo.png"
+            alt="PenDen Logo"
+            className="h-[100px] w-[60px] object-contain hover:opacity-90 transition"
+          />
+        </div>
 
-        {/* 🔍 Search bar (hidden on small screens) */}
+        {/* 🔍 Search bar */}
         <div className="hidden sm:flex flex-1 mx-6">
           <input
             type="text"
@@ -138,12 +167,17 @@ export default function Navbar() {
               </button>
             </>
           ) : (
-            <button
-              onClick={handleLogout}
-              className="text-gray-700 hover:text-green-700 transition"
-            >
-              Logout
-            </button>
+            <>
+              <span className="text-gray-700 font-medium">
+                👋 Hi, {user?.username || "User"}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="text-gray-700 hover:text-green-700 transition"
+              >
+                Logout
+              </button>
+            </>
           )}
           <button className="flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition">
             <ShoppingCart size={18} /> <span>0</span>
@@ -200,15 +234,20 @@ export default function Navbar() {
               </button>
             </>
           ) : (
-            <button
-              onClick={() => {
-                handleLogout();
-                setMenuOpen(false);
-              }}
-              className="text-gray-700 hover:text-green-700"
-            >
-              Logout
-            </button>
+            <>
+              <span className="text-gray-700 font-medium">
+                👋 Hi, {user?.username || "User"}
+              </span>
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setMenuOpen(false);
+                }}
+                className="text-gray-700 hover:text-green-700"
+              >
+                Logout
+              </button>
+            </>
           )}
 
           <button className="flex items-center gap-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
@@ -287,7 +326,6 @@ export default function Navbar() {
                 {message.text}
               </p>
             )}
-
             {["username", "email", "phone", "address", "password"].map(
               (field) => (
                 <input
@@ -329,6 +367,7 @@ export default function Navbar() {
     </header>
   );
 }
+
 
 
 // import React, { useState, useEffect } from "react";

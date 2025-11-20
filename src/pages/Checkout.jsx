@@ -7,13 +7,11 @@ export default function Checkout() {
   const navigate = useNavigate();
 
   const [cart, setCart] = useState(() => {
-    const savedCart = sessionStorage.getItem("cart");
-    return savedCart ? JSON.parse(savedCart) : state?.cart || {};
+    return state?.cart || JSON.parse(localStorage.getItem("cart")) || {};
   });
 
   const [products, setProducts] = useState(() => {
-    const savedProducts = sessionStorage.getItem("products");
-    return savedProducts ? JSON.parse(savedProducts) : state?.products || [];
+    return state?.products || JSON.parse(localStorage.getItem("products")) || [];
   });
 
   const [orderedItems, setOrderedItems] = useState([]);
@@ -21,59 +19,52 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  const CHECKOUT_ENDPOINT = "checkout/";
-  const PRODUCTS_ENDPOINT = "products/";
-
-  // 🧠 Save cart and products to sessionStorage whenever they change
+  // Sync cart + products to localStorage
   useEffect(() => {
-    sessionStorage.setItem("cart", JSON.stringify(cart));
-  }, [cart]);
+    localStorage.setItem("cart", JSON.stringify(cart));
+    localStorage.setItem("products", JSON.stringify(products));
+  }, [cart, products]);
 
-  useEffect(() => {
-    sessionStorage.setItem("products", JSON.stringify(products));
-  }, [products]);
-
-  // 📦 Fetch products if none exist
-  useEffect(() => {
-    if (!products.length) {
-      API.get(PRODUCTS_ENDPOINT)
-        .then((res) => {
-          if (Array.isArray(res.data)) {
-            setProducts(res.data);
-          } else {
-            console.error("Expected an array but got:", res.data);
-            setProducts([]);
-          }
-        })
-        .catch((err) => {
-          console.error("Failed to fetch products:", err);
-          setProducts([]);
-        });
-    }
-  }, [products.length]);
-
-  // 🧮 Calculate ordered items & total
+  // Calculate ordered items + total
   useEffect(() => {
     const items = products.filter((p) => cart[p.id]);
     setOrderedItems(items);
 
-    const totalAmount = items.reduce((sum, p) => {
-      const price = Number(p.price) || 0;
-      return sum + price * cart[p.id];
-    }, 0);
+    const totalAmount = items.reduce(
+      (sum, p) => sum + (Number(p.price) || 0) * cart[p.id],
+      0
+    );
 
     setTotal(totalAmount);
-  }, [products, cart]);
+  }, [cart, products]);
 
-  // ✅ Confirm Order
-  const handleConfirmOrder = async () => {
-    if (orderedItems.length === 0) {
+  // ------------------------------
+  // PAYSTACK INLINE PAYMENT
+  // ------------------------------
+  const payWithPaystack = () => {
+    if (total <= 0) {
       setMessage("Your cart is empty.");
       return;
     }
 
-    setLoading(true);
-    setMessage("");
+    const handler = window.PaystackPop.setup({
+      key: "YOUR_PAYSTACK_PUBLIC_KEY", 
+      email: "customer@example.com",
+      amount: total * 100,
+      currency: "ZAR",
+      callback: function (response) {
+        handlePaymentSuccess(response);
+      },
+      onClose: function () {
+        setMessage("Payment popup closed.");
+      },
+    });
+
+    handler.openIframe();
+  };
+
+  const handlePaymentSuccess = async (response) => {
+    setMessage("Payment successful! Saving order...");
 
     try {
       const payload = {
@@ -82,66 +73,58 @@ export default function Checkout() {
           quantity: cart[item.id],
         })),
         total,
+        payment_reference: response.reference,
         address: "Default address",
       };
 
-      const response = await API.post(CHECKOUT_ENDPOINT, payload);
-      console.log("Order placed:", response.data);
+      await API.post("checkout/", payload);
 
-      setMessage("✅ Order placed successfully!");
-      sessionStorage.removeItem("cart"); // clear cart after success
-      sessionStorage.removeItem("products");
+      setMessage("✅ Order completed successfully!");
 
-      setTimeout(() => navigate("/"), 2000);
+      localStorage.removeItem("cart");
+      localStorage.removeItem("products");
+
+      setTimeout(() => navigate("/"), 1500);
     } catch (error) {
-      console.error("Checkout failed:", error.response?.data || error.message);
-      setMessage("Failed to place order. Please Login or Register First.");
-    } finally {
-      setLoading(false);
+      console.error(error);
+      setMessage("Payment succeeded but order saving failed.");
     }
   };
 
-  // 🧭 Handle Back button - keep cart in sessionStorage
-  const handleGoBack = () => {
-    sessionStorage.setItem("cart", JSON.stringify(cart));
-    navigate(-1);
-  };
+  // ------------------------------
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <h2 className="text-2xl font-bold mb-4">Checkout Summary</h2>
+    <div className="p-4 md:p-6 bg-gray-100 min-h-screen">
+      <h2 className="text-xl md:text-2xl font-bold mb-4">Checkout Summary</h2>
 
       {orderedItems.length === 0 ? (
         <p>Your cart is empty.</p>
       ) : (
         <div className="bg-white p-4 rounded shadow-md">
-          {orderedItems.map((item) => {
-            const price = Number(item.price) || 0;
-            const quantity = cart[item.id];
-            const subtotal = price * quantity;
-
-            return (
-              <div
-                key={item.id}
-                className="flex items-center justify-between border-b py-3"
-              >
-                <div className="flex items-center space-x-4">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-16 h-16 object-cover rounded"
-                  />
-                  <div>
-                    <p className="font-semibold">{item.name}</p>
-                    <p className="text-gray-600">
-                      Quantity: {quantity} × R{price.toFixed(2)}
-                    </p>
-                  </div>
+          {orderedItems.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center justify-between border-b py-3"
+            >
+              <div className="flex items-center space-x-3 md:space-x-4">
+                <img
+                  src={item.image}
+                  alt={item.name}
+                  className="w-14 h-14 md:w-16 md:h-16 object-cover rounded"
+                />
+                <div>
+                  <p className="font-semibold">{item.name}</p>
+                  <p className="text-gray-600 text-sm">
+                    Qty: {cart[item.id]} × R{Number(item.price).toFixed(2)}
+                  </p>
                 </div>
-                <p className="font-semibold">R{subtotal.toFixed(2)}</p>
               </div>
-            );
-          })}
+
+              <p className="font-semibold text-sm md:text-base">
+                R{(Number(item.price) * cart[item.id]).toFixed(2)}
+              </p>
+            </div>
+          ))}
 
           <div className="text-right mt-4">
             <p className="text-lg font-bold">Total: R{total.toFixed(2)}</p>
@@ -159,24 +142,30 @@ export default function Checkout() {
             </div>
           )}
 
+          {/* Back + Confirm Order */}
           <div className="flex justify-end mt-6 space-x-3">
             <button
-              onClick={handleGoBack}
-              disabled={loading}
+              onClick={() => navigate(-1)}
               className="bg-gray-400 text-white py-2 px-4 rounded hover:bg-gray-500"
             >
               Back
             </button>
+
             <button
-              onClick={handleConfirmOrder}
-              disabled={loading}
-              className={`${
-                loading
-                  ? "bg-green-400 cursor-not-allowed"
-                  : "bg-green-600 hover:bg-green-700"
-              } text-white py-2 px-4 rounded`}
+              onClick={() => setMessage("Order will be placed after payment.")}
+              className="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700"
             >
-              {loading ? "Processing..." : "Confirm Order"}
+              Confirm Order
+            </button>
+          </div>
+
+          {/* PAYSTACK BUTTON - Bottom Left + Mobile friendly */}
+          <div className="mt-6 flex justify-start">
+            <button
+              onClick={payWithPaystack}
+              className="w-full md:w-auto bg-green-600 text-white py-3 px-6 rounded hover:bg-blue-700"
+            >
+              Pay Now (Mastercard / Visa)
             </button>
           </div>
         </div>
@@ -184,6 +173,7 @@ export default function Checkout() {
     </div>
   );
 }
+
 
 
 
@@ -195,49 +185,37 @@ export default function Checkout() {
 //   const { state } = useLocation();
 //   const navigate = useNavigate();
 
-//   const [cart, setCart] = useState(state?.cart || {});
-//   const [products, setProducts] = useState(state?.products || []);
+//   // ✅ Restore from state or localStorage
+//   const [cart, setCart] = useState(() => {
+//     return state?.cart || JSON.parse(localStorage.getItem("cart")) || {};
+//   });
+//   const [products, setProducts] = useState(() => {
+//     return state?.products || JSON.parse(localStorage.getItem("products")) || [];
+//   });
+
 //   const [orderedItems, setOrderedItems] = useState([]);
 //   const [total, setTotal] = useState(0);
 //   const [loading, setLoading] = useState(false);
 //   const [message, setMessage] = useState("");
 
-//   const CHECKOUT_ENDPOINT = "checkout/";
-//   const PRODUCTS_ENDPOINT = "products/";
-
-//   //Fetch products if none were passed from state
 //   useEffect(() => {
-//     if (!products.length) {
-//       API.get(PRODUCTS_ENDPOINT)
-//         .then((res) => {
-//           if (Array.isArray(res.data)) {
-//             setProducts(res.data);
-//           } else {
-//             console.error("Expected an array but got:", res.data);
-//             setProducts([]);
-//           }
-//         })
-//         .catch((err) => {
-//           console.error("Failed to fetch products:", err);
-//           setProducts([]);
-//         });
-//     }
-//   }, [products.length]);
+//     // Always sync to localStorage for persistence
+//     localStorage.setItem("cart", JSON.stringify(cart));
+//     localStorage.setItem("products", JSON.stringify(products));
+//   }, [cart, products]);
 
-//   //Calculate ordered items & total dynamically
+//   // Compute ordered items & total
 //   useEffect(() => {
 //     const items = products.filter((p) => cart[p.id]);
 //     setOrderedItems(items);
 
-//     const totalAmount = items.reduce((sum, p) => {
-//       const price = Number(p.price) || 0;
-//       return sum + price * cart[p.id];
-//     }, 0);
+//     const totalAmt = items.reduce(
+//       (sum, p) => sum + (Number(p.price) || 0) * cart[p.id],
+//       0
+//     );
+//     setTotal(totalAmt);
+//   }, [cart, products]);
 
-//     setTotal(totalAmount);
-//   }, [products, cart]);
-
-//   //Confirm Order function
 //   const handleConfirmOrder = async () => {
 //     if (orderedItems.length === 0) {
 //       setMessage("Your cart is empty.");
@@ -245,8 +223,6 @@ export default function Checkout() {
 //     }
 
 //     setLoading(true);
-//     setMessage("");
-
 //     try {
 //       const payload = {
 //         items: orderedItems.map((item) => ({
@@ -257,14 +233,14 @@ export default function Checkout() {
 //         address: "Default address",
 //       };
 
-//       const response = await API.post(CHECKOUT_ENDPOINT, payload);
-//       console.log("Order placed:", response.data);
-
-//       setMessage("Order placed successfully!");
-//       setTimeout(() => navigate("/"), 2000);
+//       await API.post("checkout/", payload);
+//       setMessage("✅ Order placed successfully!");
+//       localStorage.removeItem("cart");
+//       localStorage.removeItem("products");
+//       setTimeout(() => navigate("/"), 1500);
 //     } catch (error) {
-//       console.error("Checkout failed:", error.response?.data || error.message);
-//       setMessage("Failed to place order. Please Login or Register First.");
+//       console.error(error);
+//       setMessage("Failed to place order. Please log in first.");
 //     } finally {
 //       setLoading(false);
 //     }
@@ -278,33 +254,29 @@ export default function Checkout() {
 //         <p>Your cart is empty.</p>
 //       ) : (
 //         <div className="bg-white p-4 rounded shadow-md">
-//           {orderedItems.map((item) => {
-//             const price = Number(item.price) || 0;
-//             const quantity = cart[item.id];
-//             const subtotal = price * quantity;
-
-//             return (
-//               <div
-//                 key={item.id}
-//                 className="flex items-center justify-between border-b py-3"
-//               >
-//                 <div className="flex items-center space-x-4">
-//                   <img
-//                     src={item.image}
-//                     alt={item.name}
-//                     className="w-16 h-16 object-cover rounded"
-//                   />
-//                   <div>
-//                     <p className="font-semibold">{item.name}</p>
-//                     <p className="text-gray-600">
-//                       Quantity: {quantity} × R{price.toFixed(2)}
-//                     </p>
-//                   </div>
+//           {orderedItems.map((item) => (
+//             <div
+//               key={item.id}
+//               className="flex items-center justify-between border-b py-3"
+//             >
+//               <div className="flex items-center space-x-4">
+//                 <img
+//                   src={item.image}
+//                   alt={item.name}
+//                   className="w-16 h-16 object-cover rounded"
+//                 />
+//                 <div>
+//                   <p className="font-semibold">{item.name}</p>
+//                   <p className="text-gray-600">
+//                     Qty: {cart[item.id]} × R{Number(item.price).toFixed(2)}
+//                   </p>
 //                 </div>
-//                 <p className="font-semibold">R{subtotal.toFixed(2)}</p>
 //               </div>
-//             );
-//           })}
+//               <p className="font-semibold">
+//                 R{(Number(item.price) * cart[item.id]).toFixed(2)}
+//               </p>
+//             </div>
+//           ))}
 
 //           <div className="text-right mt-4">
 //             <p className="text-lg font-bold">Total: R{total.toFixed(2)}</p>
@@ -325,7 +297,6 @@ export default function Checkout() {
 //           <div className="flex justify-end mt-6 space-x-3">
 //             <button
 //               onClick={() => navigate(-1)}
-//               disabled={loading}
 //               className="bg-gray-400 text-white py-2 px-4 rounded hover:bg-gray-500"
 //             >
 //               Back
@@ -347,4 +318,6 @@ export default function Checkout() {
 //     </div>
 //   );
 // }
+
+
 
