@@ -3,13 +3,6 @@ import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Checkout from "./pages/Checkout";
 
-// Fixed API base URL configuration
-const API_BASE = process.env.NODE_ENV === 'production' 
-  ? 'https://penden-backend.onrender.com' 
-  : 'http://localhost:3001'; // Add development server URL
-
-// Optional: Add API_BASE to global context if needed across components
-export { API_BASE };
 
 export default function App() {
   return (
