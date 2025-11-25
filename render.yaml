@@ -1,0 +1,11 @@
+# frontend/render.yaml
+services:
+  - type: web
+    name: penden-frontend
+    env: static
+    plan: free
+    buildCommand: "./build.sh"
+    staticPublishPath: "./build"
+    envVars:
+      - key: REACT_APP_API_URL
+        value: "https://penden-backend.onrender.com/api"
