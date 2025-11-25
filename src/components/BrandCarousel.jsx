@@ -8,6 +8,8 @@ export default function BrandCarousel() {
   const [message, setMessage] = useState("");
   const [msgType, setMsgType] = useState(""); // success | error
 
+  const themeColor = "#969195";
+
   const handleUpload = async () => {
     if (!title || !pdfFile) {
       setMsgType("error");
@@ -42,28 +44,38 @@ export default function BrandCarousel() {
   };
 
   return (
-    <div className="mt-6 bg-white rounded-md p-6 shadow-lg border border-green-200">
-      <h3 className="font-semibold text-xl mb-4 text-green-700">
-        Product List Upload
+    <div
+      className="mt-6 rounded-md p-6 shadow-lg"
+      style={{ backgroundColor: "#ffffff", border: `3px solid ${themeColor}` }}
+    >
+      <h3
+        className="font-semibold text-xl mb-4"
+        style={{ color: themeColor }}
+      >
+        Stationery Upload
       </h3>
 
       {/* Message Box */}
       {message && (
         <div
-          className={`p-3 mb-4 rounded text-white ${
-            msgType === "success" ? "bg-green-600" : "bg-red-600"
-          }`}
+          className={`p-3 mb-4 rounded text-white`}
+          style={{
+            backgroundColor: msgType === "success" ? "#6c6a6f" : "#b94a48",
+          }}
         >
           {message}
         </div>
       )}
 
       <div className="flex flex-col gap-4">
-
         <input
           type="text"
           placeholder="Enter PDF Title"
-          className="border border-green-300 rounded p-2 focus:ring-2 focus:ring-green-500 focus:outline-none"
+          className="rounded p-2 focus:ring-2 focus:outline-none"
+          style={{
+            border: `2px solid ${themeColor}`,
+            focusRingColor: themeColor,
+          }}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
@@ -72,16 +84,20 @@ export default function BrandCarousel() {
           type="file"
           accept="application/pdf"
           onChange={(e) => setPdfFile(e.target.files[0])}
-          className="border border-green-300 p-2 rounded focus:ring-2 focus:ring-green-500 focus:outline-none"
+          className="rounded p-2 focus:ring-2 focus:outline-none"
+          style={{
+            border: `2px solid ${themeColor}`,
+            focusRingColor: themeColor,
+          }}
         />
 
         <button
           onClick={handleUpload}
-          className={`rounded py-2 text-white transition ${
-            loading
-              ? "bg-green-300 cursor-not-allowed"
-              : "bg-green-600 hover:bg-green-700"
-          }`}
+          className="rounded py-2 text-white transition"
+          style={{
+            backgroundColor: loading ? "#c8c7c9" : themeColor,
+            cursor: loading ? "not-allowed" : "pointer",
+          }}
           disabled={loading}
         >
           {loading ? "Uploading..." : "Upload PDF"}

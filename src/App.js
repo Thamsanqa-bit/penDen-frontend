@@ -2,6 +2,11 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Checkout from "./pages/Checkout";
+import FramesPage from "./components/SideBar";
+import StationeryPage from "./components/SideBar";
+import PrintingPage from "./components/SideBar";
+import MirrorsPage from "./components/SideBar";
+
 
 
 export default function App() {
@@ -11,6 +16,11 @@ export default function App() {
         <Navbar />
         <main className="flex-grow">
           <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/frames" element={<FramesPage />} />
+            <Route path="/stationery" element={<StationeryPage />} />
+            <Route path="/printing" element={<PrintingPage />} />
+            <Route path="/mirrors" element={<MirrorsPage />} />
             {/* 🏠 Home Page */}
             <Route path="/" element={<Home />} />
 

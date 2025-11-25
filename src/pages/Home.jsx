@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import API from "../services/api";
 import SideBar from "../components/SideBar";
-import HeroBanner from "../components/HeroBanner";
-import BrandCarousel from "../components/BrandCarousel";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
@@ -23,16 +21,31 @@ export default function Home() {
     previous_page: null,
   });
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
+  const navigate = useNavigate();
+  const location = useLocation(); // 🔥 Detect ?category=
+
+  /** Read category from URL */
+  const getCategoryFromURL = () => {
+    const params = new URLSearchParams(location.search);
+    return params.get("category") || "";
+  };
+
+  /** Show flash message */
   const showMessage = (type, text) => {
     setMessage({ type, text });
     setTimeout(() => setMessage({ type: "", text: "" }), 3000);
   };
 
+  /** Fetch products (WITH CATEGORY SUPPORT) */
   const fetchProducts = (page = 1) => {
     setLoading(true);
-    API.get(`products/?page=${page}&page_size=12`)
+    const category = getCategoryFromURL();
+
+    let url = `products/?page=${page}&page_size=12`;
+    if (category) url += `&category=${category}`; // 🔥 Add category filter
+
+    API.get(url)
       .then((res) => {
         setProducts(res.data.products || []);
         setPagination(res.data.pagination || {
@@ -50,19 +63,22 @@ export default function Home() {
       .finally(() => setLoading(false));
   };
 
+  /** Initial + category change refetch */
   useEffect(() => {
     fetchProducts(1);
-  }, []);
+  }, [location.search]); // 🔥 Reload when category changes
 
-  // 🔁 Save cart & products persistently
+  /** Save cart */
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
 
+  /** Save products */
   useEffect(() => {
     localStorage.setItem("products", JSON.stringify(products));
   }, [products]);
 
+  /** Add to cart */
   const handleAddToCart = (productId) => {
     API.post("cart/add/", { product_id: productId, quantity: 1 })
       .then(() => {
@@ -75,6 +91,7 @@ export default function Home() {
       .catch(() => showMessage("error", "Could not add product to cart."));
   };
 
+  /** Remove from cart */
   const handleRemoveFromCart = (productId) => {
     API.post("cart/remove/", { product_id: productId, quantity: 1 })
       .then(() => {
@@ -89,6 +106,7 @@ export default function Home() {
       .catch(() => showMessage("error", "Could not remove product from cart."));
   };
 
+  /** Checkout */
   const handleCheckout = () => {
     if (Object.keys(cart).length === 0) {
       showMessage("error", "Your cart is empty.");
@@ -105,17 +123,19 @@ export default function Home() {
     }, 400);
   };
 
+  /** Pagination NEXT */
   const handleNextPage = () => {
     if (pagination.has_next) {
       fetchProducts(pagination.next_page);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
+  /** Pagination PREVIOUS */
   const handlePreviousPage = () => {
     if (pagination.has_previous) {
       fetchProducts(pagination.previous_page);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
@@ -126,13 +146,11 @@ export default function Home() {
       </div>
 
       <main className="flex-1 p-4 sm:p-6">
-        <HeroBanner />
-        <BrandCarousel />
 
         {message.text && (
           <div
             className={`p-3 rounded text-white text-center ${
-              message.type === "success" ? "bg-green-500" : "bg-red-500"
+              message.type === "success" ? "bg-[#969195]" : "bg-red-500"
             }`}
           >
             {message.text}
@@ -143,13 +161,14 @@ export default function Home() {
           <div className="text-sm text-gray-600">
             Showing {products.length} of {pagination.total_products} products
           </div>
+
           <button
             onClick={handleCheckout}
             disabled={loadingCheckout}
             className={`${
               loadingCheckout
-                ? "bg-green-400 cursor-not-allowed"
-                : "bg-green-600 hover:bg-green-700"
+                ? "bg-[#b6b3b1] cursor-not-allowed"
+                : "bg-[#969195] hover:bg-[#7f7c7a]"
             } text-white py-2 px-6 rounded-lg shadow-md transition`}
           >
             {loadingCheckout ? "Processing..." : "Proceed to Checkout"}
@@ -158,7 +177,7 @@ export default function Home() {
 
         {loading ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#969195]"></div>
           </div>
         ) : (
           <>
@@ -181,7 +200,9 @@ export default function Home() {
                         className="h-48 w-full object-cover rounded"
                       />
                       <h3 className="mt-2 font-semibold">{p.name}</h3>
-                      <p className="text-gray-600 mb-2">R{Number(p.price).toFixed(2)}</p>
+                      <p className="text-gray-600 mb-2">
+                        R{Number(p.price).toFixed(2)}
+                      </p>
 
                       {qty > 0 ? (
                         <div className="flex items-center justify-between mt-auto">
@@ -194,7 +215,7 @@ export default function Home() {
                           <span>{qty}</span>
                           <button
                             onClick={() => handleAddToCart(p.id)}
-                            className="bg-green-600 text-white px-3 rounded hover:bg-green-700"
+                            className="bg-[#969195] text-white px-3 rounded hover:bg-[#7f7c7a]"
                           >
                             +
                           </button>
@@ -202,7 +223,7 @@ export default function Home() {
                       ) : (
                         <button
                           onClick={() => handleAddToCart(p.id)}
-                          className="bg-green-600 text-white py-2 rounded hover:bg-green-700 mt-auto"
+                          className="bg-[#969195] text-white py-2 rounded hover:bg-[#7f7c7a] mt-auto"
                         >
                           Add to Cart
                         </button>
@@ -213,39 +234,38 @@ export default function Home() {
               )}
             </div>
 
-            {/* Pagination Controls */}
-            {/* Simple Arrow Pagination */}
-      {pagination.total_pages > 1 && (
-        <div className="flex justify-center items-center space-x-4 mt-8 py-4">
-          <button
-            onClick={handlePreviousPage}
-            disabled={!pagination.has_previous}
-            className={`p-3 rounded-full ${
-              pagination.has_previous
-                ? "bg-green-600 hover:bg-green-700 text-white"
-                : "bg-gray-300 text-gray-400 cursor-not-allowed"
-            } transition`}
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
+            {/* Pagination */}
+            {pagination.total_pages > 1 && (
+              <div className="flex justify-center items-center space-x-4 mt-8 py-4">
+                <button
+                  onClick={handlePreviousPage}
+                  disabled={!pagination.has_previous}
+                  className={`p-3 rounded-full ${
+                    pagination.has_previous
+                      ? "bg-[#969195] hover:bg-[#7f7c7a] text-white"
+                      : "bg-gray-300 text-gray-400 cursor-not-allowed"
+                  } transition`}
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/>
+                  </svg>
+                </button>
 
-    <button
-      onClick={handleNextPage}
-      disabled={!pagination.has_next}
-      className={`p-3 rounded-full ${
-        pagination.has_next
-          ? "bg-green-600 hover:bg-green-700 text-white"
-          : "bg-gray-300 text-gray-400 cursor-not-allowed"
-      } transition`}
-    >
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-      </svg>
-    </button>
-  </div>
-)}
+                <button
+                  onClick={handleNextPage}
+                  disabled={!pagination.has_next}
+                  className={`p-3 rounded-full ${
+                    pagination.has_next
+                      ? "bg-[#969195] hover:bg-[#7f7c7a] text-white"
+                      : "bg-gray-300 text-gray-400 cursor-not-allowed"
+                  } transition`}
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
+                  </svg>
+                </button>
+              </div>
+            )}
           </>
         )}
       </main>
