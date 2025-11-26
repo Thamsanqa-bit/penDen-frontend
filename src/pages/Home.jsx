@@ -23,38 +23,37 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-  const location = useLocation(); // 🔥 Detect ?category=
+  const location = useLocation();
 
-  /** Read category from URL */
   const getCategoryFromURL = () => {
     const params = new URLSearchParams(location.search);
     return params.get("category") || "";
   };
 
-  /** Show flash message */
   const showMessage = (type, text) => {
     setMessage({ type, text });
     setTimeout(() => setMessage({ type: "", text: "" }), 3000);
   };
 
-  /** Fetch products (WITH CATEGORY SUPPORT) */
   const fetchProducts = (page = 1) => {
     setLoading(true);
     const category = getCategoryFromURL();
 
     let url = `products/?page=${page}&page_size=12`;
-    if (category) url += `&category=${category}`; // 🔥 Add category filter
+    if (category) url += `&category=${category}`;
 
     API.get(url)
       .then((res) => {
         setProducts(res.data.products || []);
-        setPagination(res.data.pagination || {
-          current_page: 1,
-          total_pages: 1,
-          total_products: 0,
-          has_next: false,
-          has_previous: false,
-        });
+        setPagination(
+          res.data.pagination || {
+            current_page: 1,
+            total_pages: 1,
+            total_products: 0,
+            has_next: false,
+            has_previous: false,
+          }
+        );
       })
       .catch(() => {
         showMessage("error", "Failed to load products.");
@@ -63,22 +62,18 @@ export default function Home() {
       .finally(() => setLoading(false));
   };
 
-  /** Initial + category change refetch */
   useEffect(() => {
     fetchProducts(1);
-  }, [location.search]); // 🔥 Reload when category changes
+  }, [location.search]);
 
-  /** Save cart */
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
 
-  /** Save products */
   useEffect(() => {
     localStorage.setItem("products", JSON.stringify(products));
   }, [products]);
 
-  /** Add to cart */
   const handleAddToCart = (productId) => {
     API.post("cart/add/", { product_id: productId, quantity: 1 })
       .then(() => {
@@ -91,7 +86,6 @@ export default function Home() {
       .catch(() => showMessage("error", "Could not add product to cart."));
   };
 
-  /** Remove from cart */
   const handleRemoveFromCart = (productId) => {
     API.post("cart/remove/", { product_id: productId, quantity: 1 })
       .then(() => {
@@ -106,7 +100,6 @@ export default function Home() {
       .catch(() => showMessage("error", "Could not remove product from cart."));
   };
 
-  /** Checkout */
   const handleCheckout = () => {
     if (Object.keys(cart).length === 0) {
       showMessage("error", "Your cart is empty.");
@@ -123,7 +116,6 @@ export default function Home() {
     }, 400);
   };
 
-  /** Pagination NEXT */
   const handleNextPage = () => {
     if (pagination.has_next) {
       fetchProducts(pagination.next_page);
@@ -131,7 +123,6 @@ export default function Home() {
     }
   };
 
-  /** Pagination PREVIOUS */
   const handlePreviousPage = () => {
     if (pagination.has_previous) {
       fetchProducts(pagination.previous_page);
@@ -149,7 +140,7 @@ export default function Home() {
 
         {message.text && (
           <div
-            className={`p-3 rounded text-white text-center ${
+            className={`p-3 rounded text-white text-center mb-3 ${
               message.type === "success" ? "bg-[#969195]" : "bg-red-500"
             }`}
           >
@@ -157,7 +148,8 @@ export default function Home() {
           </div>
         )}
 
-        <div className="flex justify-between items-center mb-4">
+        {/* 🔥 Responsive top bar and button spacing */}
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mb-6">
           <div className="text-sm text-gray-600">
             Showing {products.length} of {pagination.total_products} products
           </div>
@@ -165,11 +157,11 @@ export default function Home() {
           <button
             onClick={handleCheckout}
             disabled={loadingCheckout}
-            className={`${
+            className={`w-full sm:w-auto ${
               loadingCheckout
                 ? "bg-[#b6b3b1] cursor-not-allowed"
                 : "bg-[#969195] hover:bg-[#7f7c7a]"
-            } text-white py-2 px-6 rounded-lg shadow-md transition`}
+            } text-white py-3 px-6 rounded-lg shadow-md transition`}
           >
             {loadingCheckout ? "Processing..." : "Proceed to Checkout"}
           </button>
@@ -181,7 +173,8 @@ export default function Home() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {/* 🔥 Extra spacing added between button and grid */}
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {products.length === 0 ? (
                 <p className="col-span-full text-center text-gray-500 py-8">
                   No products found.
@@ -234,7 +227,6 @@ export default function Home() {
               )}
             </div>
 
-            {/* Pagination */}
             {pagination.total_pages > 1 && (
               <div className="flex justify-center items-center space-x-4 mt-8 py-4">
                 <button
@@ -247,7 +239,12 @@ export default function Home() {
                   } transition`}
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
                   </svg>
                 </button>
 
@@ -261,7 +258,12 @@ export default function Home() {
                   } transition`}
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
                   </svg>
                 </button>
               </div>
