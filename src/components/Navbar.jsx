@@ -302,7 +302,7 @@ export default function Navbar() {
         </div>
 
         {/* 🔍 Search bar with results */}
-        <div className="hidden sm:flex flex-1 mx-6 relative search-container">
+        <div className="flex flex-1 mx-2 sm:mx-6 relative search-container">
           <div className="w-full relative">
             <input
               type="text"
@@ -441,14 +441,14 @@ export default function Navbar() {
       {/* 📱 Mobile Dropdown */}
       {menuOpen && (
         <div className="flex flex-col items-center bg-white border-t py-4 space-y-3 md:hidden">
-          <div className="flex w-11/12 relative search-container">
+          {/* <div className="flex w-11/12 relative search-container">
             <input
               type="text"
               placeholder="Search products..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={handleKeyPress}
-              className="flex-1 border rounded-l-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-green-500"
+              className="flex-1 border rounded-l-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-grey-500"
             />
             <button
               onClick={handleSearch}
@@ -461,7 +461,7 @@ export default function Navbar() {
                 'Go'
               )}
             </button>
-          </div>
+          </div> */}
 
           {/* Mobile Search Results */}
           {showResults && searchResults.length > 0 && (
