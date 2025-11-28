@@ -1,45 +1,39 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 import { Trash2, Minus, Plus } from "lucide-react";
 
 export default function Checkout() {
-  const { state } = useLocation();
   const navigate = useNavigate();
 
-  const [cart, setCart] = useState(() => {
-    return state?.cart || JSON.parse(localStorage.getItem("cart")) || {};
-  });
-
-  const [products, setProducts] = useState(() => {
-    return state?.products || JSON.parse(localStorage.getItem("products")) || [];
-  });
-
+  const [cart, setCart] = useState({});
   const [orderedItems, setOrderedItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState({});
 
-  // Sync cart + products to localStorage
+  /** 🔥 1. Load Cart From Backend Session */
+  const loadCart = async () => {
+    try {
+      const response = await API.get("cart/");
+      const data = response.data;
+
+      setCart(data.cart || {});
+      setOrderedItems(data.items || []);
+      setTotal(data.total || 0);
+    } catch (error) {
+      console.log(error);
+      setCart({});
+      setOrderedItems([]);
+      setTotal(0);
+    }
+  };
+
   useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cart));
-    localStorage.setItem("products", JSON.stringify(products));
-  }, [cart, products]);
+    loadCart();
+  }, []);
 
-  // Compute totals
-  useEffect(() => {
-    const items = products.filter((p) => cart[p.id]);
-    setOrderedItems(items);
-
-    const totalAmount = items.reduce(
-      (sum, p) => sum + Number(p.price) * cart[p.id],
-      0
-    );
-
-    setTotal(totalAmount);
-  }, [cart, products]);
-
-  // Remove item completely
+  /** 🔥 2. Remove Item */
   const handleRemoveItem = async (productId) => {
     setLoading((prev) => ({ ...prev, [productId]: "remove" }));
 
@@ -49,12 +43,7 @@ export default function Checkout() {
         quantity: cart[productId],
       });
 
-      setCart((prev) => {
-        const updated = { ...prev };
-        delete updated[productId];
-        return updated;
-      });
-
+      await loadCart();
       setMessage("Item removed from cart");
       setTimeout(() => setMessage(""), 3000);
     } catch (error) {
@@ -65,7 +54,7 @@ export default function Checkout() {
     }
   };
 
-  // Decrease quantity
+  /** 🔥 3. Decrease Quantity */
   const handleDecreaseQuantity = async (productId) => {
     if (cart[productId] <= 1) {
       handleRemoveItem(productId);
@@ -76,39 +65,29 @@ export default function Checkout() {
 
     try {
       await API.post("cart/remove/", { product_id: productId, quantity: 1 });
-
-      setCart((prev) => ({
-        ...prev,
-        [productId]: prev[productId] - 1,
-      }));
-    } catch (error) {
+      await loadCart();
+    } catch {
       setMessage("Failed to update quantity");
-      setTimeout(() => setMessage(""), 3000);
     } finally {
       setLoading((prev) => ({ ...prev, [productId]: false }));
     }
   };
 
-  // Increase quantity
+  /** 🔥 4. Increase Quantity */
   const handleIncreaseQuantity = async (productId) => {
     setLoading((prev) => ({ ...prev, [productId]: "increase" }));
 
     try {
       await API.post("cart/add/", { product_id: productId, quantity: 1 });
-
-      setCart((prev) => ({
-        ...prev,
-        [productId]: (prev[productId] || 0) + 1,
-      }));
-    } catch (error) {
+      await loadCart();
+    } catch {
       setMessage("Failed to update quantity");
-      setTimeout(() => setMessage(""), 3000);
     } finally {
       setLoading((prev) => ({ ...prev, [productId]: false }));
     }
   };
 
-  // PayFast Payment
+  /** 🔥 5. PayFast Payment */
   const payWithPayFast = async () => {
     if (total <= 0) return;
 
@@ -147,7 +126,6 @@ export default function Checkout() {
               key={item.id}
               className="flex flex-col md:flex-row items-center justify-between border-b py-4 gap-4"
             >
-              {/* Product + Image */}
               <div className="flex items-center gap-3 flex-1 w-full">
                 <img
                   src={item.image}
@@ -162,7 +140,6 @@ export default function Checkout() {
                 </div>
               </div>
 
-              {/* Quantity Controls */}
               <div className="flex items-center gap-3 md:gap-4">
                 <button
                   onClick={() => handleDecreaseQuantity(item.id)}
@@ -185,7 +162,6 @@ export default function Checkout() {
                 </button>
               </div>
 
-              {/* Price & remove */}
               <div className="flex items-center gap-5">
                 <p className="font-semibold text-[#969195]">
                   R{(item.price * cart[item.id]).toFixed(2)}
@@ -201,17 +177,13 @@ export default function Checkout() {
             </div>
           ))}
 
-          {/* Total Section */}
           <div className="mt-4 pt-4 border-t flex justify-between">
             <p className="text-lg font-bold text-[#969195]">
               Total: R{total.toFixed(2)}
             </p>
-            <p className="text-sm text-gray-500">
-              {orderedItems.length} item(s)
-            </p>
+            <p className="text-sm text-gray-500">{orderedItems.length} item(s)</p>
           </div>
 
-          {/* Buttons */}
           <div className="flex flex-col md:flex-row justify-between gap-4 mt-6">
             <button
               onClick={() => navigate("/")}

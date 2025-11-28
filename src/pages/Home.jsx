@@ -1,15 +1,12 @@
-import { useEffect, useState } from "react";
+// src/pages/Home.jsx
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import API from "../services/api";
 import SideBar from "../components/SideBar";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
-  // cart shape: { "<productId>": quantity, ... } (keys are strings)
-  const [cart, setCart] = useState(() => {
-    const saved = localStorage.getItem("cart");
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [cart, setCart] = useState({ items: [], total_price: 0 }); // will store backend shape
   const [loadingCheckout, setLoadingCheckout] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [pagination, setPagination] = useState({
@@ -22,14 +19,24 @@ export default function Home() {
     previous_page: null,
   });
   const [loading, setLoading] = useState(false);
-  const [loadingCart, setLoadingCart] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
 
-  const getCategoryFromURL = () => {
-    const params = new URLSearchParams(location.search);
-    return params.get("category") || "";
+  // inactivity timer (5 minutes)
+  const INACTIVITY_MS = 5 * 60 * 1000;
+  const inactivityTimerRef = useRef(null);
+
+  // reset inactivity timer whenever user does something
+  const resetInactivityTimer = () => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+    inactivityTimerRef.current = setTimeout(() => {
+      // session likely expired — clear UI cart
+      setCart({ items: [], total_price: 0 });
+      showMessage("error", "Session expired due to inactivity. Cart cleared.");
+    }, INACTIVITY_MS);
   };
 
   const showMessage = (type, text) => {
@@ -37,40 +44,9 @@ export default function Home() {
     setTimeout(() => setMessage({ type: "", text: "" }), 3000);
   };
 
-  // Helper: convert server cart items -> { "productId": quantity }
-  const mapServerItemsToCart = (items = []) => {
-    const mapped = {};
-    items.forEach((it) => {
-      // support either { product: { id: ... }, quantity } or { product_id, quantity }
-      const pid =
-        it.product && it.product.id !== undefined
-          ? String(it.product.id)
-          : it.product_id !== undefined
-          ? String(it.product_id)
-          : null;
-      if (pid) mapped[pid] = it.quantity || 0;
-    });
-    return mapped;
-  };
-
-  // Fetch user's cart from backend (single source of truth)
-  const fetchCart = () => {
-    setLoadingCart(true);
-    return API.get("cart/")
-      .then((res) => {
-        // expect res.data.items to be array of cart items
-        const items = res.data.items || [];
-        const mapped = mapServerItemsToCart(items);
-        setCart(mapped);
-        localStorage.setItem("cart", JSON.stringify(mapped)); // persist synced state
-        return mapped;
-      })
-      .catch((err) => {
-        // if 404 or other — keep local cart but inform user
-        console.warn("Could not fetch cart:", err?.response?.data || err);
-        return null;
-      })
-      .finally(() => setLoadingCart(false));
+  const getCategoryFromURL = () => {
+    const params = new URLSearchParams(location.search);
+    return params.get("category") || "";
   };
 
   const fetchProducts = (page = 1) => {
@@ -83,15 +59,7 @@ export default function Home() {
     API.get(url)
       .then((res) => {
         setProducts(res.data.products || []);
-        setPagination(
-          res.data.pagination || {
-            current_page: 1,
-            total_pages: 1,
-            total_products: 0,
-            has_next: false,
-            has_previous: false,
-          }
-        );
+        setPagination(res.data.pagination || {});
       })
       .catch(() => {
         showMessage("error", "Failed to load products.");
@@ -100,93 +68,92 @@ export default function Home() {
       .finally(() => setLoading(false));
   };
 
-  // On mount: fetch products and cart once (cart is authoritative)
+  // fetch server cart
+  const fetchCart = () => {
+    API.get("cart/")
+      .then((res) => {
+        setCart(res.data || { items: [], total_price: 0 });
+      })
+      .catch(() => {
+        // if session expired, backend may return empty or 401; handle gracefully
+        setCart({ items: [], total_price: 0 });
+      });
+  };
+
+  // lightweight ping to keep session alive on server
+  const pingSession = () => {
+    API.get("cart/ping/").catch(() => {
+      // ignore ping errors
+    });
+  };
+
   useEffect(() => {
     fetchProducts(1);
     fetchCart();
+    resetInactivityTimer();
+
+    // add global user interaction listeners to reset inactivity timer and ping session
+    const events = ["click", "keydown", "mousemove", "touchstart"];
+    const onUserAction = () => {
+      resetInactivityTimer();
+      pingSession();
+    };
+
+    events.forEach((e) => window.addEventListener(e, onUserAction));
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, onUserAction));
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // If route category changes, fetch products for that category
   useEffect(() => {
-    fetchProducts(1);
+    // keep timer reset when cart changes from API
+    resetInactivityTimer();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.search]);
-
-  // Keep localStorage in sync whenever cart changes
-  useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
 
-  // Add to cart — use backend result to update local state
+  // add to cart calls backend and then refresh cart
   const handleAddToCart = (productId) => {
     API.post("cart/add/", { product_id: productId, quantity: 1 })
-      .then((res) => {
-        // Expect backend returns serialized cart (with items)
-        const items = res.data.items || res.data.items || [];
-        const mapped = mapServerItemsToCart(items);
-        setCart(mapped);
-        localStorage.setItem("cart", JSON.stringify(mapped));
+      .then(() => {
+        fetchCart();
+        pingSession();
+        resetInactivityTimer();
         showMessage("success", "Product added to cart.");
       })
-      .catch((err) => {
-        console.error("Add to cart error:", err?.response?.data || err);
-        showMessage("error", "Could not add product to cart.");
-      });
+      .catch(() => showMessage("error", "Could not add product to cart."));
   };
 
-  // Remove from cart — use backend result to update local state
+  // remove from cart calls backend and then refresh cart
   const handleRemoveFromCart = (productId) => {
     API.post("cart/remove/", { product_id: productId, quantity: 1 })
-      .then((res) => {
-        // backend should return updated cart
-        const items = res.data.items || [];
-        const mapped = mapServerItemsToCart(items);
-        setCart(mapped);
-        localStorage.setItem("cart", JSON.stringify(mapped));
+      .then(() => {
+        fetchCart();
+        pingSession();
+        resetInactivityTimer();
         showMessage("success", "Product removed from cart.");
       })
-      .catch((err) => {
-        console.error("Remove from cart error:", err?.response?.data || err);
-        // If server says item not found -> refresh cart from server to resync
-        if (err?.response?.status === 404) {
-          fetchCart().then(() => {
-            showMessage("error", "Item was not in cart — cart refreshed.");
-          });
-        } else {
-          showMessage("error", "Could not remove product from cart.");
-        }
-      });
-  };
-
-  // Optional: explicit update (set quantity)
-  const handleUpdateCartQuantity = (productId, quantity) => {
-    API.put("cart/update/", { product_id: productId, quantity })
-      .then((res) => {
-        const items = res.data.items || [];
-        const mapped = mapServerItemsToCart(items);
-        setCart(mapped);
-        localStorage.setItem("cart", JSON.stringify(mapped));
-      })
-      .catch((err) => {
-        console.error("Update cart error:", err?.response?.data || err);
-        showMessage("error", "Could not update cart.");
-      });
+      .catch(() => showMessage("error", "Could not remove product from cart."));
   };
 
   const handleCheckout = () => {
-    if (Object.keys(cart).length === 0) {
-      showMessage("error", "Your cart is empty.");
-      return;
-    }
-
+    // fetch cart again and if not empty navigate
     setLoadingCheckout(true);
-    localStorage.setItem("cart", JSON.stringify(cart));
-    localStorage.setItem("products", JSON.stringify(products));
-
-    // Navigate to checkout with server-synced cart (no setTimeout needed)
-    navigate("/checkout", { state: { cart, products } });
-    setLoadingCheckout(false);
+    API.get("cart/")
+      .then((res) => {
+        const serverCart = res.data || { items: [], total_price: 0 };
+        if (!serverCart.items || serverCart.items.length === 0) {
+          showMessage("error", "Your cart is empty.");
+          return;
+        }
+        // navigate to checkout page — checkout will fetch the cart again to be safe
+        navigate("/checkout");
+      })
+      .catch(() => {
+        showMessage("error", "Failed to load cart for checkout.");
+      })
+      .finally(() => setLoadingCheckout(false));
   };
 
   const handleNextPage = () => {
@@ -201,6 +168,12 @@ export default function Home() {
       fetchProducts(pagination.previous_page);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
+  };
+
+  // helper: get quantity for product id
+  const getQty = (productId) => {
+    const item = cart.items?.find((it) => Number(it.product.id) === Number(productId));
+    return item ? item.quantity : 0;
   };
 
   return (
@@ -222,7 +195,7 @@ export default function Home() {
 
         <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mb-6">
           <div className="text-sm text-gray-600">
-            Showing {products.length} of {pagination.total_products} products
+            Showing {products.length} of {pagination.total_products || 0} products
           </div>
 
           <button
@@ -251,8 +224,7 @@ export default function Home() {
                 </p>
               ) : (
                 products.map((p) => {
-                  const pid = String(p.id);
-                  const qty = cart[pid] || 0;
+                  const qty = getQty(p.id);
                   return (
                     <div
                       key={p.id}
@@ -264,9 +236,7 @@ export default function Home() {
                         className="h-48 w-full object-cover rounded"
                       />
                       <h3 className="mt-2 font-semibold">{p.name}</h3>
-                      <p className="text-gray-600 mb-2">
-                        R{Number(p.price).toFixed(2)}
-                      </p>
+                      <p className="text-gray-600 mb-2">R{Number(p.price).toFixed(2)}</p>
 
                       {qty > 0 ? (
                         <div className="flex items-center justify-between mt-auto">
@@ -310,12 +280,7 @@ export default function Home() {
                   } transition`}
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
 
@@ -329,12 +294,7 @@ export default function Home() {
                   } transition`}
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
               </div>
