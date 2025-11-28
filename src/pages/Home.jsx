@@ -5,13 +5,10 @@ import SideBar from "../components/SideBar";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
-
-  // ✅ Load cart from localStorage ONLY on first load
   const [cart, setCart] = useState(() => {
     const saved = localStorage.getItem("cart");
     return saved ? JSON.parse(saved) : {};
   });
-
   const [loadingCheckout, setLoadingCheckout] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [pagination, setPagination] = useState({
@@ -20,20 +17,13 @@ export default function Home() {
     total_products: 0,
     has_next: false,
     has_previous: false,
+    next_page: null,
+    previous_page: null,
   });
-
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
-
-  // 🔥 FIX — Detect return from payment link
-  useEffect(() => {
-    if (location.state?.paid) {
-      localStorage.removeItem("cart");
-      setCart({});
-    }
-  }, [location.state]);
 
   const getCategoryFromURL = () => {
     const params = new URLSearchParams(location.search);
@@ -55,9 +45,20 @@ export default function Home() {
     API.get(url)
       .then((res) => {
         setProducts(res.data.products || []);
-        setPagination(res.data.pagination || {});
+        setPagination(
+          res.data.pagination || {
+            current_page: 1,
+            total_pages: 1,
+            total_products: 0,
+            has_next: false,
+            has_previous: false,
+          }
+        );
       })
-      .catch(() => showMessage("error", "Failed to load products."))
+      .catch(() => {
+        showMessage("error", "Failed to load products.");
+        setProducts([]);
+      })
       .finally(() => setLoading(false));
   };
 
@@ -65,10 +66,13 @@ export default function Home() {
     fetchProducts(1);
   }, [location.search]);
 
-  // Persist cart
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
+
+  useEffect(() => {
+    localStorage.setItem("products", JSON.stringify(products));
+  }, [products]);
 
   const handleAddToCart = (productId) => {
     API.post("cart/add/", { product_id: productId, quantity: 1 })
@@ -93,7 +97,7 @@ export default function Home() {
         });
         showMessage("success", "Product removed from cart.");
       })
-      .catch(() => showMessage("error", "Could not remove product."));
+      .catch(() => showMessage("error", "Could not remove product from cart."));
   };
 
   const handleCheckout = () => {
@@ -103,11 +107,10 @@ export default function Home() {
     }
 
     setLoadingCheckout(true);
+    localStorage.setItem("cart", JSON.stringify(cart));
+    localStorage.setItem("products", JSON.stringify(products));
 
     setTimeout(() => {
-      // 🔥 FIX: clear localStorage BEFORE redirect
-      localStorage.removeItem("cart");
-
       navigate("/checkout", { state: { cart, products } });
       setLoadingCheckout(false);
     }, 400);
@@ -134,6 +137,7 @@ export default function Home() {
       </div>
 
       <main className="flex-1 p-4 sm:p-6">
+
         {message.text && (
           <div
             className={`p-3 rounded text-white text-center mb-3 ${
@@ -144,9 +148,10 @@ export default function Home() {
           </div>
         )}
 
+        {/* 🔥 Responsive top bar and button spacing */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mb-6">
           <div className="text-sm text-gray-600">
-            Showing {products.length} of {pagination.total_products}
+            Showing {products.length} of {pagination.total_products} products
           </div>
 
           <button
@@ -168,6 +173,7 @@ export default function Home() {
           </div>
         ) : (
           <>
+            {/* 🔥 Extra spacing added between button and grid */}
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {products.length === 0 ? (
                 <p className="col-span-full text-center text-gray-500 py-8">
