@@ -1,12 +1,17 @@
-// src/pages/Home.jsx
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import API from "../services/api";
 import SideBar from "../components/SideBar";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
-  const [cart, setCart] = useState({ items: [], total_price: 0 }); // will store backend shape
+
+  // ✅ Load cart from localStorage ONLY on first load
+  const [cart, setCart] = useState(() => {
+    const saved = localStorage.getItem("cart");
+    return saved ? JSON.parse(saved) : {};
+  });
+
   const [loadingCheckout, setLoadingCheckout] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [pagination, setPagination] = useState({
@@ -15,38 +20,29 @@ export default function Home() {
     total_products: 0,
     has_next: false,
     has_previous: false,
-    next_page: null,
-    previous_page: null,
   });
+
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
 
-  // inactivity timer (5 minutes)
-  const INACTIVITY_MS = 5 * 60 * 1000;
-  const inactivityTimerRef = useRef(null);
-
-  // reset inactivity timer whenever user does something
-  const resetInactivityTimer = () => {
-    if (inactivityTimerRef.current) {
-      clearTimeout(inactivityTimerRef.current);
+  // 🔥 FIX — Detect return from payment link
+  useEffect(() => {
+    if (location.state?.paid) {
+      localStorage.removeItem("cart");
+      setCart({});
     }
-    inactivityTimerRef.current = setTimeout(() => {
-      // session likely expired — clear UI cart
-      setCart({ items: [], total_price: 0 });
-      showMessage("error", "Session expired due to inactivity. Cart cleared.");
-    }, INACTIVITY_MS);
+  }, [location.state]);
+
+  const getCategoryFromURL = () => {
+    const params = new URLSearchParams(location.search);
+    return params.get("category") || "";
   };
 
   const showMessage = (type, text) => {
     setMessage({ type, text });
     setTimeout(() => setMessage({ type: "", text: "" }), 3000);
-  };
-
-  const getCategoryFromURL = () => {
-    const params = new URLSearchParams(location.search);
-    return params.get("category") || "";
   };
 
   const fetchProducts = (page = 1) => {
@@ -61,99 +57,60 @@ export default function Home() {
         setProducts(res.data.products || []);
         setPagination(res.data.pagination || {});
       })
-      .catch(() => {
-        showMessage("error", "Failed to load products.");
-        setProducts([]);
-      })
+      .catch(() => showMessage("error", "Failed to load products."))
       .finally(() => setLoading(false));
-  };
-
-  // fetch server cart
-  const fetchCart = () => {
-    API.get("cart/")
-      .then((res) => {
-        setCart(res.data || { items: [], total_price: 0 });
-      })
-      .catch(() => {
-        // if session expired, backend may return empty or 401; handle gracefully
-        setCart({ items: [], total_price: 0 });
-      });
-  };
-
-  // lightweight ping to keep session alive on server
-  const pingSession = () => {
-    API.get("cart/ping/").catch(() => {
-      // ignore ping errors
-    });
   };
 
   useEffect(() => {
     fetchProducts(1);
-    fetchCart();
-    resetInactivityTimer();
+  }, [location.search]);
 
-    // add global user interaction listeners to reset inactivity timer and ping session
-    const events = ["click", "keydown", "mousemove", "touchstart"];
-    const onUserAction = () => {
-      resetInactivityTimer();
-      pingSession();
-    };
-
-    events.forEach((e) => window.addEventListener(e, onUserAction));
-    return () => {
-      events.forEach((e) => window.removeEventListener(e, onUserAction));
-      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
+  // Persist cart
   useEffect(() => {
-    // keep timer reset when cart changes from API
-    resetInactivityTimer();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
 
-  // add to cart calls backend and then refresh cart
   const handleAddToCart = (productId) => {
     API.post("cart/add/", { product_id: productId, quantity: 1 })
       .then(() => {
-        fetchCart();
-        pingSession();
-        resetInactivityTimer();
+        setCart((prev) => ({
+          ...prev,
+          [productId]: (prev[productId] || 0) + 1,
+        }));
         showMessage("success", "Product added to cart.");
       })
       .catch(() => showMessage("error", "Could not add product to cart."));
   };
 
-  // remove from cart calls backend and then refresh cart
   const handleRemoveFromCart = (productId) => {
     API.post("cart/remove/", { product_id: productId, quantity: 1 })
       .then(() => {
-        fetchCart();
-        pingSession();
-        resetInactivityTimer();
+        setCart((prev) => {
+          const updated = { ...prev };
+          if (updated[productId] > 1) updated[productId]--;
+          else delete updated[productId];
+          return updated;
+        });
         showMessage("success", "Product removed from cart.");
       })
-      .catch(() => showMessage("error", "Could not remove product from cart."));
+      .catch(() => showMessage("error", "Could not remove product."));
   };
 
   const handleCheckout = () => {
-    // fetch cart again and if not empty navigate
+    if (Object.keys(cart).length === 0) {
+      showMessage("error", "Your cart is empty.");
+      return;
+    }
+
     setLoadingCheckout(true);
-    API.get("cart/")
-      .then((res) => {
-        const serverCart = res.data || { items: [], total_price: 0 };
-        if (!serverCart.items || serverCart.items.length === 0) {
-          showMessage("error", "Your cart is empty.");
-          return;
-        }
-        // navigate to checkout page — checkout will fetch the cart again to be safe
-        navigate("/checkout");
-      })
-      .catch(() => {
-        showMessage("error", "Failed to load cart for checkout.");
-      })
-      .finally(() => setLoadingCheckout(false));
+
+    setTimeout(() => {
+      // 🔥 FIX: clear localStorage BEFORE redirect
+      localStorage.removeItem("cart");
+
+      navigate("/checkout", { state: { cart, products } });
+      setLoadingCheckout(false);
+    }, 400);
   };
 
   const handleNextPage = () => {
@@ -168,12 +125,6 @@ export default function Home() {
       fetchProducts(pagination.previous_page);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
-  };
-
-  // helper: get quantity for product id
-  const getQty = (productId) => {
-    const item = cart.items?.find((it) => Number(it.product.id) === Number(productId));
-    return item ? item.quantity : 0;
   };
 
   return (
@@ -195,7 +146,7 @@ export default function Home() {
 
         <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mb-6">
           <div className="text-sm text-gray-600">
-            Showing {products.length} of {pagination.total_products || 0} products
+            Showing {products.length} of {pagination.total_products}
           </div>
 
           <button
@@ -224,7 +175,7 @@ export default function Home() {
                 </p>
               ) : (
                 products.map((p) => {
-                  const qty = getQty(p.id);
+                  const qty = cart[p.id] || 0;
                   return (
                     <div
                       key={p.id}
@@ -236,7 +187,9 @@ export default function Home() {
                         className="h-48 w-full object-cover rounded"
                       />
                       <h3 className="mt-2 font-semibold">{p.name}</h3>
-                      <p className="text-gray-600 mb-2">R{Number(p.price).toFixed(2)}</p>
+                      <p className="text-gray-600 mb-2">
+                        R{Number(p.price).toFixed(2)}
+                      </p>
 
                       {qty > 0 ? (
                         <div className="flex items-center justify-between mt-auto">
@@ -280,7 +233,12 @@ export default function Home() {
                   } transition`}
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
                   </svg>
                 </button>
 
@@ -294,7 +252,12 @@ export default function Home() {
                   } transition`}
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
                   </svg>
                 </button>
               </div>
