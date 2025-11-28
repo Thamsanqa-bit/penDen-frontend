@@ -5,6 +5,7 @@ import SideBar from "../components/SideBar";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
+  // cart shape: { "<productId>": quantity, ... } (keys are strings)
   const [cart, setCart] = useState(() => {
     const saved = localStorage.getItem("cart");
     return saved ? JSON.parse(saved) : {};
@@ -21,6 +22,7 @@ export default function Home() {
     previous_page: null,
   });
   const [loading, setLoading] = useState(false);
+  const [loadingCart, setLoadingCart] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -33,6 +35,42 @@ export default function Home() {
   const showMessage = (type, text) => {
     setMessage({ type, text });
     setTimeout(() => setMessage({ type: "", text: "" }), 3000);
+  };
+
+  // Helper: convert server cart items -> { "productId": quantity }
+  const mapServerItemsToCart = (items = []) => {
+    const mapped = {};
+    items.forEach((it) => {
+      // support either { product: { id: ... }, quantity } or { product_id, quantity }
+      const pid =
+        it.product && it.product.id !== undefined
+          ? String(it.product.id)
+          : it.product_id !== undefined
+          ? String(it.product_id)
+          : null;
+      if (pid) mapped[pid] = it.quantity || 0;
+    });
+    return mapped;
+  };
+
+  // Fetch user's cart from backend (single source of truth)
+  const fetchCart = () => {
+    setLoadingCart(true);
+    return API.get("cart/")
+      .then((res) => {
+        // expect res.data.items to be array of cart items
+        const items = res.data.items || [];
+        const mapped = mapServerItemsToCart(items);
+        setCart(mapped);
+        localStorage.setItem("cart", JSON.stringify(mapped)); // persist synced state
+        return mapped;
+      })
+      .catch((err) => {
+        // if 404 or other — keep local cart but inform user
+        console.warn("Could not fetch cart:", err?.response?.data || err);
+        return null;
+      })
+      .finally(() => setLoadingCart(false));
   };
 
   const fetchProducts = (page = 1) => {
@@ -62,42 +100,78 @@ export default function Home() {
       .finally(() => setLoading(false));
   };
 
+  // On mount: fetch products and cart once (cart is authoritative)
   useEffect(() => {
     fetchProducts(1);
+    fetchCart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // If route category changes, fetch products for that category
+  useEffect(() => {
+    fetchProducts(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.search]);
 
+  // Keep localStorage in sync whenever cart changes
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
 
-  useEffect(() => {
-    localStorage.setItem("products", JSON.stringify(products));
-  }, [products]);
-
+  // Add to cart — use backend result to update local state
   const handleAddToCart = (productId) => {
     API.post("cart/add/", { product_id: productId, quantity: 1 })
-      .then(() => {
-        setCart((prev) => ({
-          ...prev,
-          [productId]: (prev[productId] || 0) + 1,
-        }));
+      .then((res) => {
+        // Expect backend returns serialized cart (with items)
+        const items = res.data.items || res.data.items || [];
+        const mapped = mapServerItemsToCart(items);
+        setCart(mapped);
+        localStorage.setItem("cart", JSON.stringify(mapped));
         showMessage("success", "Product added to cart.");
       })
-      .catch(() => showMessage("error", "Could not add product to cart."));
+      .catch((err) => {
+        console.error("Add to cart error:", err?.response?.data || err);
+        showMessage("error", "Could not add product to cart.");
+      });
   };
 
+  // Remove from cart — use backend result to update local state
   const handleRemoveFromCart = (productId) => {
     API.post("cart/remove/", { product_id: productId, quantity: 1 })
-      .then(() => {
-        setCart((prev) => {
-          const updated = { ...prev };
-          if (updated[productId] > 1) updated[productId]--;
-          else delete updated[productId];
-          return updated;
-        });
+      .then((res) => {
+        // backend should return updated cart
+        const items = res.data.items || [];
+        const mapped = mapServerItemsToCart(items);
+        setCart(mapped);
+        localStorage.setItem("cart", JSON.stringify(mapped));
         showMessage("success", "Product removed from cart.");
       })
-      .catch(() => showMessage("error", "Could not remove product from cart."));
+      .catch((err) => {
+        console.error("Remove from cart error:", err?.response?.data || err);
+        // If server says item not found -> refresh cart from server to resync
+        if (err?.response?.status === 404) {
+          fetchCart().then(() => {
+            showMessage("error", "Item was not in cart — cart refreshed.");
+          });
+        } else {
+          showMessage("error", "Could not remove product from cart.");
+        }
+      });
+  };
+
+  // Optional: explicit update (set quantity)
+  const handleUpdateCartQuantity = (productId, quantity) => {
+    API.put("cart/update/", { product_id: productId, quantity })
+      .then((res) => {
+        const items = res.data.items || [];
+        const mapped = mapServerItemsToCart(items);
+        setCart(mapped);
+        localStorage.setItem("cart", JSON.stringify(mapped));
+      })
+      .catch((err) => {
+        console.error("Update cart error:", err?.response?.data || err);
+        showMessage("error", "Could not update cart.");
+      });
   };
 
   const handleCheckout = () => {
@@ -110,10 +184,9 @@ export default function Home() {
     localStorage.setItem("cart", JSON.stringify(cart));
     localStorage.setItem("products", JSON.stringify(products));
 
-    setTimeout(() => {
-      navigate("/checkout", { state: { cart, products } });
-      setLoadingCheckout(false);
-    }, 400);
+    // Navigate to checkout with server-synced cart (no setTimeout needed)
+    navigate("/checkout", { state: { cart, products } });
+    setLoadingCheckout(false);
   };
 
   const handleNextPage = () => {
@@ -137,7 +210,6 @@ export default function Home() {
       </div>
 
       <main className="flex-1 p-4 sm:p-6">
-
         {message.text && (
           <div
             className={`p-3 rounded text-white text-center mb-3 ${
@@ -148,7 +220,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* 🔥 Responsive top bar and button spacing */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mb-6">
           <div className="text-sm text-gray-600">
             Showing {products.length} of {pagination.total_products} products
@@ -173,7 +244,6 @@ export default function Home() {
           </div>
         ) : (
           <>
-            {/* 🔥 Extra spacing added between button and grid */}
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {products.length === 0 ? (
                 <p className="col-span-full text-center text-gray-500 py-8">
@@ -181,7 +251,8 @@ export default function Home() {
                 </p>
               ) : (
                 products.map((p) => {
-                  const qty = cart[p.id] || 0;
+                  const pid = String(p.id);
+                  const qty = cart[pid] || 0;
                   return (
                     <div
                       key={p.id}
