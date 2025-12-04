@@ -319,42 +319,57 @@ export default function Checkout() {
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row justify-between gap-4 mt-6">
+ {/* ====== FOOTER ACTIONS SECTION ====== */}
+<div className="mt-6 flex flex-col gap-4">
 
+{/* Continue Shopping */}
+<button
+  onClick={() => navigate("/")}
+  className="bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors w-full"
+>
+  Continue Shopping
+</button>
+
+{/* Order & Payment Buttons Container */}
+<div className="flex flex-col gap-3 w-full">
+
+  {/* 🔘 Confirm Order */}
   <button
-    onClick={() => navigate("/")}
-    className="bg-gray-500 text-white py-3 px-6 rounded hover:bg-gray-600 transition-colors w-full md:w-auto"
+    onClick={confirmOrder}
+    disabled={confirmLoading || orderedItems.length === 0 || isConfirmed}
+    className={`py-3 rounded-lg w-full font-semibold transition-colors
+      ${isConfirmed 
+        ? "bg-green-600 text-white" 
+        : "bg-gray-400 text-white hover:bg-gray-500"
+      }
+      ${confirmLoading ? "opacity-50 cursor-not-allowed" : ""}
+    `}
   >
-    Continue Shopping
+    {confirmLoading 
+      ? "Confirming..." 
+      : isConfirmed 
+      ? "Order Confirmed ✓" 
+      : "Confirm Order"}
   </button>
 
-  <div className="flex flex-col gap-3 w-full md:w-auto">
+  {/* 💳 PayFast Button */}
+  <button
+    onClick={payWithPayFast}
+    disabled={!isConfirmed}
+    className={`py-3 rounded-lg w-full font-semibold transition-colors
+      ${isConfirmed 
+        ? "bg-[#969195] text-white hover:bg-[#847b80]" 
+        : "bg-gray-200 text-gray-500 cursor-not-allowed"
+      }
+    `}
+  >
+    Pay Now (Visa/Mastercard)
+  </button>
 
-    {/* 🔘 Confirm Order (Grey Button) */}
-    <button
-      onClick={confirmOrder}
-      disabled={confirmLoading || orderedItems.length === 0 || isConfirmed}
-      className={`py-3 px-6 rounded w-full 
-        ${isConfirmed ? "bg-green-600 text-white" : "bg-gray-400 text-white"}
-        ${confirmLoading ? "opacity-50 cursor-not-allowed" : ""}
-      `}
-    >
-      {confirmLoading ? "Confirming..." : isConfirmed ? "Order Confirmed ✓" : "Confirm Order"}
-    </button>
-
-    {/* 💳 Pay Now – only enabled after confirmation */}
-    <button
-      onClick={payWithPayFast}
-      disabled={!isConfirmed}
-      className="bg-[#969195] text-white py-3 px-6 rounded hover:bg-[#847b80] transition-colors disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed w-full"
-    >
-      Pay Now (Visa/Mastercard)
-    </button>
-
-    <p className="text-xs text-gray-500 text-center">Secure payment via PayFast</p>
-  </div>
-
+  <p className="text-xs text-gray-500 text-center">Secure payment via PayFast</p>
 </div>
+</div>
+
 
         </div>
       )}
