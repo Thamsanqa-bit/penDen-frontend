@@ -194,10 +194,8 @@ export default function Checkout() {
     return true;
   };
 
-  /** 🔥 5. Confirm Order */
  /** 🔥 5. Confirm Order */
-const confirmOrder = async () => {
-  // Validate address first
+ const confirmOrder = async () => {
   if (!validateAddress()) {
     setTimeout(() => setMessage(""), 3000);
     return;
@@ -207,24 +205,15 @@ const confirmOrder = async () => {
   setMessage("");
 
   try {
-    // Get user email if logged in, otherwise get from form or use placeholder
-    const userEmail = isLoggedIn ? userInfo?.email : ""; 
-    // Or you could add an email field to your address form
-    // For now, using a placeholder if not available
-    const email = userEmail || "customer@example.com";
-
-    // Create payload matching backend expectations
     const payload = {
       full_name: address.full_name,
       phone: address.phone,
-      email: email,  // REQUIRED by backend
-      address: `
-${address.street}
-${address.city}
-${address.province}
-${address.postal_code}
-${address.country}
-      `.trim(),  // Just the address part
+      email: address.email || (userInfo?.email ?? ""), // MUST be sent
+      street: address.street,
+      city: address.city,
+      province: address.province,
+      postal_code: address.postal_code,
+      country: address.country,
       items: orderedItems.map(item => {
         const product = getProductInfo(item);
         return {
@@ -234,23 +223,24 @@ ${address.country}
       })
     };
 
-    console.log("Sending order payload:", payload);
+    console.log("📦 Sending checkout payload:", payload);
 
     const response = await API.post("checkout/", payload);
-    const orderData = response.data;
     
-    setOrderId(orderData.id);
+    setOrderId(response.data.id);
     setIsConfirmed(true);
-    setMessage("Order confirmed successfully! You can now proceed to payment.");
+    setMessage("Order confirmed successfully!");
     setTimeout(() => setMessage(""), 3000);
+
   } catch (error) {
-    console.error("Order error:", error.response?.data || error);
+    console.error("Checkout error:", error.response?.data || error);
     setMessage(error.response?.data?.error || "Failed to confirm order");
     setTimeout(() => setMessage(""), 3000);
   } finally {
     setConfirmLoading(false);
   }
 };
+
   
   /** 🔥 6. PayFast Payment */
   const payWithPayFast = async () => {
