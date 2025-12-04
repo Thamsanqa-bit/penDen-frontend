@@ -13,6 +13,9 @@ export default function Checkout() {
   const [total, setTotal] = useState(0);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState({});
+  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
 
   // Use the cart data passed from Home page
   useEffect(() => {
@@ -118,6 +121,37 @@ export default function Checkout() {
     }
   };
 
+  const confirmOrder = async () => {
+    setConfirmLoading(true);
+    setMessage("");
+  
+    try {
+      const payload = {
+        items: orderedItems.map(item => {
+          const product = getProductInfo(item);
+          return {
+            product_id: product.id,
+            quantity: cart[product.id]
+          };
+        })
+      };
+  
+      console.log("Sending order:", payload);
+  
+      const response = await API.post("checkout/", payload);
+  
+      setIsConfirmed(true);
+      setMessage("Order confirmed successfully!");
+      setTimeout(() => setMessage(""), 3000);
+    } catch (error) {
+      console.error(error);
+      setMessage("Failed to confirm order");
+      setTimeout(() => setMessage(""), 3000);
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+  
   /** 🔥 5. PayFast Payment */
   const payWithPayFast = async () => {
     if (total <= 0 || orderedItems.length === 0) {
@@ -286,26 +320,42 @@ export default function Checkout() {
           </div>
 
           <div className="flex flex-col md:flex-row justify-between gap-4 mt-6">
-            <button
-              onClick={() => navigate("/")}
-              className="bg-gray-500 text-white py-3 px-6 rounded hover:bg-gray-600 transition-colors w-full md:w-auto"
-            >
-              Continue Shopping
-            </button>
 
-            <div className="flex flex-col gap-2 w-full md:w-auto">
-              <button
-                onClick={payWithPayFast}
-                disabled={orderedItems.length === 0}
-                className="bg-[#969195] text-white py-3 px-6 rounded hover:bg-[#847b80] transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full"
-              >
-                Pay Now (Visa/Mastercard)
-              </button>
-              <p className="text-xs text-gray-500 text-center">
-                Secure payment via PayFast
-              </p>
-            </div>
-          </div>
+  <button
+    onClick={() => navigate("/")}
+    className="bg-gray-500 text-white py-3 px-6 rounded hover:bg-gray-600 transition-colors w-full md:w-auto"
+  >
+    Continue Shopping
+  </button>
+
+  <div className="flex flex-col gap-3 w-full md:w-auto">
+
+    {/* 🔘 Confirm Order (Grey Button) */}
+    <button
+      onClick={confirmOrder}
+      disabled={confirmLoading || orderedItems.length === 0 || isConfirmed}
+      className={`py-3 px-6 rounded w-full 
+        ${isConfirmed ? "bg-green-600 text-white" : "bg-gray-400 text-white"}
+        ${confirmLoading ? "opacity-50 cursor-not-allowed" : ""}
+      `}
+    >
+      {confirmLoading ? "Confirming..." : isConfirmed ? "Order Confirmed ✓" : "Confirm Order"}
+    </button>
+
+    {/* 💳 Pay Now – only enabled after confirmation */}
+    <button
+      onClick={payWithPayFast}
+      disabled={!isConfirmed}
+      className="bg-[#969195] text-white py-3 px-6 rounded hover:bg-[#847b80] transition-colors disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed w-full"
+    >
+      Pay Now (Visa/Mastercard)
+    </button>
+
+    <p className="text-xs text-gray-500 text-center">Secure payment via PayFast</p>
+  </div>
+
+</div>
+
         </div>
       )}
     </div>
