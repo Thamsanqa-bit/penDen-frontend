@@ -214,21 +214,18 @@ export default function Checkout() {
       province: address.province,
       postal_code: address.postal_code,
       country: address.country,
-
+    
       items: orderedItems.map(item => {
-        let productId = item.product_id || item.id;
-
-        // If item came from backend
-        if (item.product && typeof item.product === "object") {
-          productId = item.product.id;
-        }
-
+        const productId =
+          item.product?.id || item.product_id || item.id;
+    
         return {
           product_id: productId,
-          quantity: cart[productId]
+          quantity: cart[productId] ?? item.quantity ?? 1
         };
       })
     };
+    
 
     console.log("📦 Sending checkout payload:", payload);
 
