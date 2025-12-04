@@ -20,6 +20,7 @@ export default function Checkout() {
   const [address, setAddress] = useState({
     full_name: "",
     phone: "",
+    email: "",
     street: "",
     city: "",
     province: "",
@@ -194,56 +195,62 @@ export default function Checkout() {
   };
 
   /** 🔥 5. Confirm Order */
-  const confirmOrder = async () => {
-    // Validate address first
-    if (!validateAddress()) {
-      setTimeout(() => setMessage(""), 3000);
-      return;
-    }
+ /** 🔥 5. Confirm Order */
+const confirmOrder = async () => {
+  // Validate address first
+  if (!validateAddress()) {
+    setTimeout(() => setMessage(""), 3000);
+    return;
+  }
 
-    setConfirmLoading(true);
-    setMessage("");
-  
-    try {
-      // Format address for backend
-      const formattedAddress = `
-${address.full_name}
-${address.phone}
+  setConfirmLoading(true);
+  setMessage("");
+
+  try {
+    // Get user email if logged in, otherwise get from form or use placeholder
+    const userEmail = isLoggedIn ? userInfo?.email : ""; 
+    // Or you could add an email field to your address form
+    // For now, using a placeholder if not available
+    const email = userEmail || "customer@example.com";
+
+    // Create payload matching backend expectations
+    const payload = {
+      full_name: address.full_name,
+      phone: address.phone,
+      email: email,  // REQUIRED by backend
+      address: `
 ${address.street}
 ${address.city}
 ${address.province}
 ${address.postal_code}
 ${address.country}
-      `.trim();
+      `.trim(),  // Just the address part
+      items: orderedItems.map(item => {
+        const product = getProductInfo(item);
+        return {
+          product_id: product.id,
+          quantity: cart[product.id]
+        };
+      })
+    };
 
-      const payload = {
-        items: orderedItems.map(item => {
-          const product = getProductInfo(item);
-          return {
-            product_id: product.id,
-            quantity: cart[product.id]
-          };
-        }),
-        address: formattedAddress
-      };
-  
-      console.log("Sending order:", payload);
-  
-      const response = await API.post("checkout/", payload);
-      const orderData = response.data;
-      
-      setOrderId(orderData.id);
-      setIsConfirmed(true);
-      setMessage("Order confirmed successfully! You can now proceed to payment.");
-      setTimeout(() => setMessage(""), 3000);
-    } catch (error) {
-      console.error("Order error:", error.response?.data || error);
-      setMessage(error.response?.data?.error || "Failed to confirm order");
-      setTimeout(() => setMessage(""), 3000);
-    } finally {
-      setConfirmLoading(false);
-    }
-  };
+    console.log("Sending order payload:", payload);
+
+    const response = await API.post("checkout/", payload);
+    const orderData = response.data;
+    
+    setOrderId(orderData.id);
+    setIsConfirmed(true);
+    setMessage("Order confirmed successfully! You can now proceed to payment.");
+    setTimeout(() => setMessage(""), 3000);
+  } catch (error) {
+    console.error("Order error:", error.response?.data || error);
+    setMessage(error.response?.data?.error || "Failed to confirm order");
+    setTimeout(() => setMessage(""), 3000);
+  } finally {
+    setConfirmLoading(false);
+  }
+};
   
   /** 🔥 6. PayFast Payment */
   const payWithPayFast = async () => {
@@ -723,6 +730,22 @@ ${address.country}
           {/* Mobile Actions Footer */}
           <div className="lg:hidden">
             {/* Shipping Address Form (Mobile) */}
+            {/* Add this to your address form */}
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Email Address *
+  </label>
+  <input
+    type="email"
+    name="email"
+    value={address.email || (isLoggedIn ? userInfo?.email : "")}
+    onChange={handleAddressChange}
+    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
+    placeholder="your@email.com"
+    required={!isLoggedIn}
+    disabled={isLoggedIn}
+  />
+</div>
             <div className="bg-white rounded-xl shadow-sm border p-4 mb-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-[#969195] rounded-lg">
