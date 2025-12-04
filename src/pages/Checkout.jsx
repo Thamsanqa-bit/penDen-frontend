@@ -454,156 +454,176 @@ export default function Checkout() {
 
           {/* Desktop Layout: Side by Side */}
           <div className="hidden lg:grid lg:grid-cols-3 gap-6">
-            {/* Left Column - Address & Form */}
-            <div className="lg:col-span-2">
-              {/* User Status */}
-              <div className={`p-4 rounded-xl mb-6 ${isLoggedIn ? 'bg-blue-50 border border-blue-200' : 'bg-yellow-50 border border-yellow-200'}`}>
-                <div className="flex items-center gap-3">
-                  <User size={20} className={isLoggedIn ? "text-blue-600" : "text-yellow-600"} />
-                  <div>
-                    <p className={`font-medium ${isLoggedIn ? 'text-blue-700' : 'text-yellow-700'}`}>
-                      {isLoggedIn ? `Welcome, ${userInfo?.email}` : 'Guest Checkout'}
-                    </p>
-                    <p className={`text-sm ${isLoggedIn ? 'text-blue-600' : 'text-yellow-600'}`}>
-                      {isLoggedIn 
-                        ? 'Your order will be linked to your account'
-                        : 'Sign in for order tracking and faster checkout'
-                      }
-                    </p>
-                  </div>
-                </div>
-              </div>
+  {/* Left Column - Address & Form */}
+  <div className="lg:col-span-2">
+    {/* User Status */}
+    <div className={`p-4 rounded-xl mb-6 ${isLoggedIn ? 'bg-blue-50 border border-blue-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+      <div className="flex items-center gap-3">
+        <User size={20} className={isLoggedIn ? "text-blue-600" : "text-yellow-600"} />
+        <div>
+          <p className={`font-medium ${isLoggedIn ? 'text-blue-700' : 'text-yellow-700'}`}>
+            {isLoggedIn ? `Welcome, ${userInfo?.email}` : 'Guest Checkout'}
+          </p>
+          <p className={`text-sm ${isLoggedIn ? 'text-blue-600' : 'text-yellow-600'}`}>
+            {isLoggedIn 
+              ? 'Your order will be linked to your account'
+              : 'Sign in for order tracking and faster checkout'
+            }
+          </p>
+        </div>
+      </div>
+    </div>
 
-              {/* Shipping Address Form */}
-              <div className="bg-white rounded-xl shadow-sm border p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-[#969195] rounded-lg">
-                    <MapPin size={20} className="text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-xl text-gray-900">Shipping Address</h3>
-                    <p className="text-gray-500 text-sm">Where should we deliver your order?</p>
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Full Name *
-                      </label>
-                      <input
-                        type="text"
-                        name="full_name"
-                        value={address.full_name}
-                        onChange={handleAddressChange}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all"
-                        placeholder="John Doe"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Phone Number *
-                      </label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={address.phone}
-                        onChange={handleAddressChange}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all"
-                        placeholder="0712345678"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Street Address *
-                      </label>
-                      <input
-                        type="text"
-                        name="street"
-                        value={address.street}
-                        onChange={handleAddressChange}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all"
-                        placeholder="123 Main Street, Suburb"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        City *
-                      </label>
-                      <input
-                        type="text"
-                        name="city"
-                        value={address.city}
-                        onChange={handleAddressChange}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all"
-                        placeholder="Cape Town"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Province *
-                      </label>
-                      <select
-                        name="province"
-                        value={address.province}
-                        onChange={handleAddressChange}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all"
-                        required
-                      >
-                        <option value="">Select Province</option>
-                        <option value="Eastern Cape">Eastern Cape</option>
-                        <option value="Free State">Free State</option>
-                        <option value="Gauteng">Gauteng</option>
-                        <option value="KwaZulu-Natal">KwaZulu-Natal</option>
-                        <option value="Limpopo">Limpopo</option>
-                        <option value="Mpumalanga">Mpumalanga</option>
-                        <option value="North West">North West</option>
-                        <option value="Northern Cape">Northern Cape</option>
-                        <option value="Western Cape">Western Cape</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Postal Code *
-                      </label>
-                      <input
-                        type="text"
-                        name="postal_code"
-                        value={address.postal_code}
-                        onChange={handleAddressChange}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all"
-                        placeholder="8000"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Country
-                      </label>
-                      <input
-                        type="text"
-                        name="country"
-                        value={address.country}
-                        onChange={handleAddressChange}
-                        className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50"
-                        disabled
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+    {/* Shipping Address Form */}
+    <div className="bg-white rounded-xl shadow-sm border p-6">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-2 bg-[#969195] rounded-lg">
+          <MapPin size={20} className="text-white" />
+        </div>
+        <div>
+          <h3 className="font-bold text-xl text-gray-900">Shipping Address</h3>
+          <p className="text-gray-500 text-sm">Where should we deliver your order?</p>
+        </div>
+      </div>
+      
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Full Name *
+            </label>
+            <input
+              type="text"
+              name="full_name"
+              value={address.full_name}
+              onChange={handleAddressChange}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all"
+              placeholder="John Doe"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Phone Number *
+            </label>
+            <input
+              type="tel"
+              name="phone"
+              value={address.phone}
+              onChange={handleAddressChange}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all"
+              placeholder="0712345678"
+              required
+            />
+          </div>
+          
+          {/* ADD EMAIL FIELD HERE for Desktop */}
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Email Address *
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={address.email || (isLoggedIn ? userInfo?.email : "")}
+              onChange={handleAddressChange}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all"
+              placeholder="your@email.com"
+              required={!isLoggedIn}
+              disabled={isLoggedIn}
+            />
+            {isLoggedIn && (
+              <p className="text-xs text-gray-500 mt-1">Using your account email</p>
+            )}
+          </div>
+          
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Street Address *
+            </label>
+            <input
+              type="text"
+              name="street"
+              value={address.street}
+              onChange={handleAddressChange}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all"
+              placeholder="123 Main Street, Suburb"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              City *
+            </label>
+            <input
+              type="text"
+              name="city"
+              value={address.city}
+              onChange={handleAddressChange}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all"
+              placeholder="Cape Town"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Province *
+            </label>
+            <select
+              name="province"
+              value={address.province}
+              onChange={handleAddressChange}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all"
+              required
+            >
+              <option value="">Select Province</option>
+              <option value="Eastern Cape">Eastern Cape</option>
+              <option value="Free State">Free State</option>
+              <option value="Gauteng">Gauteng</option>
+              <option value="KwaZulu-Natal">KwaZulu-Natal</option>
+              <option value="Limpopo">Limpopo</option>
+              <option value="Mpumalanga">Mpumalanga</option>
+              <option value="North West">North West</option>
+              <option value="Northern Cape">Northern Cape</option>
+              <option value="Western Cape">Western Cape</option>
+            </select>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Postal Code *
+            </label>
+            <input
+              type="text"
+              name="postal_code"
+              value={address.postal_code}
+              onChange={handleAddressChange}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all"
+              placeholder="8000"
+              required
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Country
+            </label>
+            <input
+              type="text"
+              name="country"
+              value={address.country}
+              onChange={handleAddressChange}
+              className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50"
+              disabled
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
             {/* Right Column - Order Summary (Desktop) */}
             <div className="hidden lg:block">
@@ -722,137 +742,141 @@ export default function Checkout() {
 
           {/* Mobile Actions Footer */}
           <div className="lg:hidden">
-            {/* Shipping Address Form (Mobile) */}
-            {/* Add this to your address form */}
-<div>
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    Email Address *
-  </label>
-  <input
-    type="email"
-    name="email"
-    value={address.email || (isLoggedIn ? userInfo?.email : "")}
-    onChange={handleAddressChange}
-    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
-    placeholder="your@email.com"
-    required={!isLoggedIn}
-    disabled={isLoggedIn}
-  />
-</div>
-            <div className="bg-white rounded-xl shadow-sm border p-4 mb-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-[#969195] rounded-lg">
-                  <MapPin size={18} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg text-gray-900">Shipping Address</h3>
-                  <p className="text-gray-500 text-sm">Delivery details</p>
-                </div>
-              </div>
-              
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    name="full_name"
-                    value={address.full_name}
-                    onChange={handleAddressChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
-                    placeholder="John Doe"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone Number *
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={address.phone}
-                    onChange={handleAddressChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
-                    placeholder="0712345678"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Street Address *
-                  </label>
-                  <input
-                    type="text"
-                    name="street"
-                    value={address.street}
-                    onChange={handleAddressChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
-                    placeholder="123 Main Street, Suburb"
-                    required
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      City *
-                    </label>
-                    <input
-                      type="text"
-                      name="city"
-                      value={address.city}
-                      onChange={handleAddressChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
-                      placeholder="Cape Town"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Province *
-                    </label>
-                    <select
-                      name="province"
-                      value={address.province}
-                      onChange={handleAddressChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
-                      required
-                    >
-                      <option value="">Select Province</option>
-                      <option value="Eastern Cape">Eastern Cape</option>
-                      <option value="Free State">Free State</option>
-                      <option value="Gauteng">Gauteng</option>
-                      <option value="KwaZulu-Natal">KwaZulu-Natal</option>
-                      <option value="Limpopo">Limpopo</option>
-                      <option value="Mpumalanga">Mpumalanga</option>
-                      <option value="North West">North West</option>
-                      <option value="Northern Cape">Northern Cape</option>
-                      <option value="Western Cape">Western Cape</option>
-                    </select>
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Postal Code *
-                  </label>
-                  <input
-                    type="text"
-                    name="postal_code"
-                    value={address.postal_code}
-                    onChange={handleAddressChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
-                    placeholder="8000"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
+  {/* Shipping Address Form (Mobile) */}
+  <div className="bg-white rounded-xl shadow-sm border p-4 mb-6">
+    <div className="flex items-center gap-3 mb-4">
+      <div className="p-2 bg-[#969195] rounded-lg">
+        <MapPin size={18} className="text-white" />
+      </div>
+      <div>
+        <h3 className="font-bold text-lg text-gray-900">Shipping Address</h3>
+        <p className="text-gray-500 text-sm">Delivery details</p>
+      </div>
+    </div>
+    
+    <div className="space-y-3">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Full Name *
+        </label>
+        <input
+          type="text"
+          name="full_name"
+          value={address.full_name}
+          onChange={handleAddressChange}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
+          placeholder="John Doe"
+          required
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Phone Number *
+        </label>
+        <input
+          type="tel"
+          name="phone"
+          value={address.phone}
+          onChange={handleAddressChange}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
+          placeholder="0712345678"
+          required
+        />
+      </div>
+      
+      {/* Email field for mobile - MOVE IT HERE */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Email Address *
+        </label>
+        <input
+          type="email"
+          name="email"
+          value={address.email || (isLoggedIn ? userInfo?.email : "")}
+          onChange={handleAddressChange}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
+          placeholder="your@email.com"
+          required={!isLoggedIn}
+          disabled={isLoggedIn}
+        />
+        {isLoggedIn && (
+          <p className="text-xs text-gray-500 mt-1">Using your account email</p>
+        )}
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Street Address *
+        </label>
+        <input
+          type="text"
+          name="street"
+          value={address.street}
+          onChange={handleAddressChange}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
+          placeholder="123 Main Street, Suburb"
+          required
+        />
+      </div>
+      
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            City *
+          </label>
+          <input
+            type="text"
+            name="city"
+            value={address.city}
+            onChange={handleAddressChange}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
+            placeholder="Cape Town"
+            required
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Province *
+          </label>
+          <select
+            name="province"
+            value={address.province}
+            onChange={handleAddressChange}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
+            required
+          >
+            <option value="">Select Province</option>
+            <option value="Eastern Cape">Eastern Cape</option>
+            <option value="Free State">Free State</option>
+            <option value="Gauteng">Gauteng</option>
+            <option value="KwaZulu-Natal">KwaZulu-Natal</option>
+            <option value="Limpopo">Limpopo</option>
+            <option value="Mpumalanga">Mpumalanga</option>
+            <option value="North West">North West</option>
+            <option value="Northern Cape">Northern Cape</option>
+            <option value="Western Cape">Western Cape</option>
+          </select>
+        </div>
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Postal Code *
+        </label>
+        <input
+          type="text"
+          name="postal_code"
+          value={address.postal_code}
+          onChange={handleAddressChange}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
+          placeholder="8000"
+          required
+        />
+      </div>
+    </div>
+  </div>
 
             {/* Mobile Action Buttons */}
             <div className="bg-white rounded-xl shadow-sm border p-4 sticky bottom-4">
