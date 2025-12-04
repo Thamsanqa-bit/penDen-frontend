@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import API from "../services/api";
@@ -15,7 +14,7 @@ export default function Checkout() {
   const [loading, setLoading] = useState({});
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
-
+  const [orderId, setOrderId] = useState(null); // Store the created order ID
 
   // Use the cart data passed from Home page
   useEffect(() => {
@@ -139,9 +138,13 @@ export default function Checkout() {
       console.log("Sending order:", payload);
   
       const response = await API.post("checkout/", payload);
-  
+      
+      // Store the order ID from the response
+      const orderData = response.data;
+      setOrderId(orderData.id);
+      
       setIsConfirmed(true);
-      setMessage("Order confirmed successfully!");
+      setMessage("Order confirmed successfully! You can now proceed to payment.");
       setTimeout(() => setMessage(""), 3000);
     } catch (error) {
       console.error(error);
@@ -152,7 +155,7 @@ export default function Checkout() {
     }
   };
   
-  /** 🔥 5. PayFast Payment */
+  /** 🔥 5. PayFast Payment - Now includes order ID */
   const payWithPayFast = async () => {
     if (total <= 0 || orderedItems.length === 0) {
       setMessage("Cart is empty");
@@ -160,11 +163,19 @@ export default function Checkout() {
       return;
     }
 
+    if (!isConfirmed || !orderId) {
+      setMessage("Please confirm your order first");
+      setTimeout(() => setMessage(""), 3000);
+      return;
+    }
+
     try {
-      const response = await API.get(`/create-payment/?amount=${total}`);
+      // Pass order ID to PayFast for tracking
+      const response = await API.get(`/create-payment/?amount=${total}&order_id=${orderId}`);
       const paymentUrl = response.data.payment_url;
 
       if (paymentUrl) {
+        // Redirect to PayFast
         window.location.href = paymentUrl;
       }
     } catch (error) {
@@ -319,58 +330,73 @@ export default function Checkout() {
             </div>
           </div>
 
- {/* ====== FOOTER ACTIONS SECTION ====== */}
-<div className="mt-6 flex flex-col gap-4">
+          {/* ====== FOOTER ACTIONS SECTION ====== */}
+          <div className="mt-6 flex flex-col gap-4">
 
-{/* Continue Shopping */}
-<button
-  onClick={() => navigate("/")}
-  className="bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors w-full"
->
-  Continue Shopping
-</button>
+            {/* Continue Shopping */}
+            <button
+              onClick={() => navigate("/")}
+              className="bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors w-full"
+            >
+              Continue Shopping
+            </button>
 
-{/* Order & Payment Buttons Container */}
-<div className="flex flex-col gap-3 w-full">
+            {/* Order & Payment Buttons Container */}
+            <div className="flex flex-col gap-3 w-full">
 
-  {/* 🔘 Confirm Order */}
-  <button
-    onClick={confirmOrder}
-    disabled={confirmLoading || orderedItems.length === 0 || isConfirmed}
-    className={`py-3 rounded-lg w-full font-semibold transition-colors
-      ${isConfirmed 
-        ? "bg-green-600 text-white" 
-        : "bg-gray-400 text-white hover:bg-gray-500"
-      }
-      ${confirmLoading ? "opacity-50 cursor-not-allowed" : ""}
-    `}
-  >
-    {confirmLoading 
-      ? "Confirming..." 
-      : isConfirmed 
-      ? "Order Confirmed ✓" 
-      : "Confirm Order"}
-  </button>
+              {/* 🔘 Confirm Order */}
+              <button
+                onClick={confirmOrder}
+                disabled={confirmLoading || orderedItems.length === 0 || isConfirmed}
+                className={`py-3 rounded-lg w-full font-semibold transition-colors
+                  ${isConfirmed 
+                    ? "bg-green-600 text-white" 
+                    : "bg-gray-400 text-white hover:bg-gray-500"
+                  }
+                  ${confirmLoading ? "opacity-50 cursor-not-allowed" : ""}
+                `}
+              >
+                {confirmLoading 
+                  ? "Confirming..." 
+                  : isConfirmed 
+                  ? "Order Confirmed ✓" 
+                  : "Confirm Order"}
+              </button>
 
-  {/* 💳 PayFast Button */}
-  <button
-    onClick={payWithPayFast}
-    disabled={!isConfirmed}
-    className={`py-3 rounded-lg w-full font-semibold transition-colors
-      ${isConfirmed 
-        ? "bg-[#969195] text-white hover:bg-[#847b80]" 
-        : "bg-gray-200 text-gray-500 cursor-not-allowed"
-      }
-    `}
-  >
-    Pay Now (Visa/Mastercard)
-  </button>
+              {/* 💳 PayFast Button - Greyed out until order is confirmed */}
+              <button
+                onClick={payWithPayFast}
+                disabled={!isConfirmed}
+                className={`py-3 rounded-lg w-full font-semibold transition-colors flex items-center justify-center gap-2
+                  ${isConfirmed 
+                    ? "bg-[#969195] text-white hover:bg-[#847b80]" 
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  }
+                `}
+              >
+                {isConfirmed ? (
+                  <>
+                    <span>Pay Now (Visa/Mastercard)</span>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </>
+                ) : (
+                  "Complete Order First"
+                )}
+              </button>
 
-  <p className="text-xs text-gray-500 text-center">Secure payment via PayFast</p>
-</div>
-</div>
-
-
+              <p className="text-xs text-gray-500 text-center">Secure payment via PayFast</p>
+              
+              {isConfirmed && (
+                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-center">
+                  <p className="text-sm text-green-700">
+                    ✅ Order #{orderId} confirmed! Ready for payment.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
