@@ -208,17 +208,24 @@ export default function Checkout() {
     const payload = {
       full_name: address.full_name,
       phone: address.phone,
-      email: address.email || (userInfo?.email ?? ""), // MUST be sent
+      email: address.email || userInfo?.email || "",
       street: address.street,
       city: address.city,
       province: address.province,
       postal_code: address.postal_code,
       country: address.country,
+
       items: orderedItems.map(item => {
-        const product = getProductInfo(item);
+        let productId = item.product_id || item.id;
+
+        // If item came from backend
+        if (item.product && typeof item.product === "object") {
+          productId = item.product.id;
+        }
+
         return {
-          product_id: product.id,
-          quantity: cart[product.id]
+          product_id: productId,
+          quantity: cart[productId]
         };
       })
     };
@@ -226,20 +233,19 @@ export default function Checkout() {
     console.log("📦 Sending checkout payload:", payload);
 
     const response = await API.post("checkout/", payload);
-    
+
     setOrderId(response.data.id);
     setIsConfirmed(true);
     setMessage("Order confirmed successfully!");
-    setTimeout(() => setMessage(""), 3000);
 
   } catch (error) {
     console.error("Checkout error:", error.response?.data || error);
     setMessage(error.response?.data?.error || "Failed to confirm order");
-    setTimeout(() => setMessage(""), 3000);
   } finally {
     setConfirmLoading(false);
   }
 };
+
 
   
   /** 🔥 6. PayFast Payment */
