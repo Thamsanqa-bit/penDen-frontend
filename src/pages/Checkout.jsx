@@ -246,34 +246,41 @@ ${address.country}
   };
   
   /** 🔥 6. PayFast Payment */
-  const payWithPayFast = async () => {
-    if (total <= 0 || orderedItems.length === 0) {
-      setMessage("Cart is empty");
-      setTimeout(() => setMessage(""), 3000);
-      return;
-    }
+const payWithPayFast = async () => {
+  if (total <= 0 || orderedItems.length === 0) {
+    setMessage("Cart is empty");
+    setTimeout(() => setMessage(""), 3000);
+    return;
+  }
 
-    if (!isConfirmed || !orderId) {
-      setMessage("Please confirm your order first");
-      setTimeout(() => setMessage(""), 3000);
-      return;
-    }
+  if (!isConfirmed || !orderId) {
+    setMessage("Please confirm your order first");
+    setTimeout(() => setMessage(""), 3000);
+    return;
+  }
 
-    try {
-      // Pass order ID to PayFast for tracking
-      const response = await API.get(`/create-payment/?amount=${total}&order_id=${orderId}`);
-      const paymentUrl = response.data.payment_url;
+  try {
+    // Try using POST method instead
+    const response = await API.post("create-payment/", {
+      amount: total,
+      order_id: orderId
+    });
+    
+    const paymentUrl = response.data.payment_url;
 
-      if (paymentUrl) {
-        // Redirect to PayFast
-        window.location.href = paymentUrl;
-      }
-    } catch (error) {
-      console.error("Payment error:", error);
-      setMessage("Payment error. Try again.");
+    if (paymentUrl) {
+      // Redirect to PayFast
+      window.location.href = paymentUrl;
+    } else {
+      setMessage("Payment URL not received. Please try again.");
       setTimeout(() => setMessage(""), 3000);
     }
-  };
+  } catch (error) {
+    console.error("Payment error:", error);
+    setMessage("Payment error. Try again.");
+    setTimeout(() => setMessage(""), 3000);
+  }
+};
 
   // Helper function to get product details from item
   const getProductInfo = (item) => {
