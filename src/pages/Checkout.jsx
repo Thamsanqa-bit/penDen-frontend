@@ -194,8 +194,8 @@ export default function Checkout() {
     return true;
   };
 
- /** 🔥 5. Confirm Order */
- const confirmOrder = async () => {
+/** 🔥 5. Confirm Order */
+const confirmOrder = async () => {
   if (!validateAddress()) {
     setTimeout(() => setMessage(""), 3000);
     return;
@@ -205,27 +205,33 @@ export default function Checkout() {
   setMessage("");
 
   try {
+    // Get email - use user's email if logged in, otherwise use form email
+    const userEmail = isLoggedIn ? userInfo?.email : address.email;
+    
+    if (!userEmail) {
+      setMessage("Email address is required");
+      setConfirmLoading(false);
+      setTimeout(() => setMessage(""), 3000);
+      return;
+    }
+
     const payload = {
       full_name: address.full_name,
       phone: address.phone,
-      email: address.email || userInfo?.email || "",
+      email: userEmail,  // Use the correct email
       street: address.street,
       city: address.city,
       province: address.province,
       postal_code: address.postal_code,
       country: address.country,
-    
       items: orderedItems.map(item => {
-        const productId =
-          item.product?.id || item.product_id || item.id;
-    
+        const productId = item.product?.id || item.product_id || item.id;
         return {
           product_id: productId,
           quantity: cart[productId] ?? item.quantity ?? 1
         };
       })
     };
-    
 
     console.log("📦 Sending checkout payload:", payload);
 
@@ -245,42 +251,41 @@ export default function Checkout() {
 
 
   
-  /** 🔥 6. PayFast Payment */
-  const payWithPayFast = async () => {
-    if (total <= 0 || orderedItems.length === 0) {
-      setMessage("Cart is empty");
-      setTimeout(() => setMessage(""), 3000);
-      return;
-    }
+/** 🔥 6. PayFast Payment */
+const payWithPayFast = async () => {
+  if (total <= 0 || orderedItems.length === 0) {
+    setMessage("Cart is empty");
+    setTimeout(() => setMessage(""), 3000);
+    return;
+  }
 
-    if (!isConfirmed || !orderId) {
-      setMessage("Please confirm your order first");
-      setTimeout(() => setMessage(""), 3000);
-      return;
-    }
+  if (!isConfirmed || !orderId) {
+    setMessage("Please confirm your order first");
+    setTimeout(() => setMessage(""), 3000);
+    return;
+  }
 
-    try {
-      // Try using POST method instead
-      const response = await API.post("create-payment/", {
-        amount: total,
-        order_id: orderId
-      });
-      
-      const paymentUrl = response.data.payment_url;
+  try {
+    // Send POST request with order_id
+    const response = await API.post("create-payment/", {
+      order_id: orderId  // Only send order_id, not amount
+    });
+    
+    const paymentUrl = response.data.payment_url;
 
-      if (paymentUrl) {
-        // Redirect to PayFast
-        window.location.href = paymentUrl;
-      } else {
-        setMessage("Payment URL not received. Please try again.");
-        setTimeout(() => setMessage(""), 3000);
-      }
-    } catch (error) {
-      console.error("Payment error:", error);
-      setMessage("Payment error. Try again.");
+    if (paymentUrl) {
+      // Redirect to PayFast
+      window.location.href = paymentUrl;
+    } else {
+      setMessage("Payment URL not received. Please try again.");
       setTimeout(() => setMessage(""), 3000);
     }
-  };
+  } catch (error) {
+    console.error("Payment error:", error.response?.data || error);
+    setMessage(error.response?.data?.error || "Payment error. Try again.");
+    setTimeout(() => setMessage(""), 3000);
+  }
+};
 
   // Helper function to get product details from item
   const getProductInfo = (item) => {
