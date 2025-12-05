@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import API from "../services/api";
-import { Trash2, Minus, Plus, MapPin, User, CreditCard, ShoppingBag, ArrowLeft, CheckCircle, Truck } from "lucide-react";
+import { Trash2, Minus, Plus, MapPin, User, CreditCard, ShoppingBag, ArrowLeft, CheckCircle, Truck, Loader } from "lucide-react";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -10,11 +10,14 @@ export default function Checkout() {
   const [cart, setCart] = useState({});
   const [orderedItems, setOrderedItems] = useState([]);
   const [total, setTotal] = useState(0);
+  const [confirmedOrderTotal, setConfirmedOrderTotal] = useState(0);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState({});
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
   const [orderId, setOrderId] = useState(null);
+  const [orderDetails, setOrderDetails] = useState(null);
   
   // Address form state
   const [address, setAddress] = useState({
@@ -71,6 +74,7 @@ export default function Checkout() {
           ...prev,
           full_name: response.data.full_name || "",
           phone: response.data.phone || "",
+          email: response.data.email || "",
           street: response.data.address || "",
           city: response.data.city || "",
           province: response.data.province || ""
@@ -113,6 +117,12 @@ export default function Checkout() {
 
   /** 🔥 2. Remove Item */
   const handleRemoveItem = async (productId) => {
+    if (isConfirmed) {
+      setMessage("Cannot modify cart after order confirmation");
+      setTimeout(() => setMessage(""), 3000);
+      return;
+    }
+
     setLoading((prev) => ({ ...prev, [productId]: "remove" }));
 
     try {
@@ -134,6 +144,12 @@ export default function Checkout() {
 
   /** 🔥 3. Decrease Quantity */
   const handleDecreaseQuantity = async (productId) => {
+    if (isConfirmed) {
+      setMessage("Cannot modify cart after order confirmation");
+      setTimeout(() => setMessage(""), 3000);
+      return;
+    }
+
     if (cart[productId] <= 1) {
       handleRemoveItem(productId);
       return;
@@ -153,6 +169,12 @@ export default function Checkout() {
 
   /** 🔥 4. Increase Quantity */
   const handleIncreaseQuantity = async (productId) => {
+    if (isConfirmed) {
+      setMessage("Cannot modify cart after order confirmation");
+      setTimeout(() => setMessage(""), 3000);
+      return;
+    }
+
     setLoading((prev) => ({ ...prev, [productId]: "increase" }));
 
     try {
@@ -176,12 +198,19 @@ export default function Checkout() {
 
   /** Validate address form */
   const validateAddress = () => {
-    const requiredFields = ['full_name', 'phone', 'street', 'city', 'province', 'postal_code'];
+    const requiredFields = ['full_name', 'phone', 'email', 'street', 'city', 'province', 'postal_code'];
     for (const field of requiredFields) {
       if (!address[field] || address[field].trim() === '') {
         setMessage(`Please fill in your ${field.replace('_', ' ')}`);
         return false;
       }
+    }
+    
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(address.email)) {
+      setMessage('Please enter a valid email address');
+      return false;
     }
     
     // Validate phone number
@@ -194,98 +223,122 @@ export default function Checkout() {
     return true;
   };
 
-/** 🔥 5. Confirm Order */
-const confirmOrder = async () => {
-  if (!validateAddress()) {
-    setTimeout(() => setMessage(""), 3000);
-    return;
-  }
-
-  setConfirmLoading(true);
-  setMessage("");
-
-  try {
-    // Get email - use user's email if logged in, otherwise use form email
-    const userEmail = isLoggedIn ? userInfo?.email : address.email;
-    
-    if (!userEmail) {
-      setMessage("Email address is required");
-      setConfirmLoading(false);
+  /** 🔥 5. Confirm Order - Store order total for PayFast */
+  const confirmOrder = async () => {
+    if (!validateAddress()) {
       setTimeout(() => setMessage(""), 3000);
       return;
     }
 
-    const payload = {
-      full_name: address.full_name,
-      phone: address.phone,
-      email: userEmail,  // Use the correct email
-      street: address.street,
-      city: address.city,
-      province: address.province,
-      postal_code: address.postal_code,
-      country: address.country,
-      items: orderedItems.map(item => {
-        const productId = item.product?.id || item.product_id || item.id;
-        return {
-          product_id: productId,
-          quantity: cart[productId] ?? item.quantity ?? 1
-        };
-      })
-    };
+    setConfirmLoading(true);
+    setMessage("");
 
-    console.log("📦 Sending checkout payload:", payload);
+    try {
+      // Get email - use form email for both guest and logged-in users (for consistency)
+      const userEmail = address.email;
+      
+      if (!userEmail) {
+        setMessage("Email address is required");
+        setConfirmLoading(false);
+        setTimeout(() => setMessage(""), 3000);
+        return;
+      }
 
-    const response = await API.post("checkout/", payload);
+      const payload = {
+        full_name: address.full_name,
+        phone: address.phone,
+        email: userEmail,
+        street: address.street,
+        city: address.city,
+        province: address.province,
+        postal_code: address.postal_code,
+        country: address.country,
+        items: orderedItems.map(item => {
+          const productId = item.product?.id || item.product_id || item.id;
+          return {
+            product_id: productId,
+            quantity: cart[productId] ?? item.quantity ?? 1
+          };
+        })
+      };
 
-    setOrderId(response.data.id);
-    setIsConfirmed(true);
-    setMessage("Order confirmed successfully!");
+      console.log("📦 Sending checkout payload:", payload);
 
-  } catch (error) {
-    console.error("Checkout error:", error.response?.data || error);
-    setMessage(error.response?.data?.error || "Failed to confirm order");
-  } finally {
-    setConfirmLoading(false);
-  }
-};
+      const response = await API.post("checkout/", payload);
 
+      const orderData = response.data;
+      setOrderId(orderData.id);
+      setOrderDetails(orderData);
+      
+      // Store the confirmed order total separately
+      const confirmedTotal = orderData.total || orderData.total_price || total;
+      setConfirmedOrderTotal(confirmedTotal);
+      
+      setIsConfirmed(true);
+      setMessage(`Order #${orderData.id} confirmed successfully!`);
+      
+      // Update display total with confirmed order total
+      if (confirmedTotal !== total) {
+        setTotal(confirmedTotal);
+      }
 
-  
-/** 🔥 6. PayFast Payment */
-const payWithPayFast = async () => {
-  if (total <= 0 || orderedItems.length === 0) {
-    setMessage("Cart is empty");
-    setTimeout(() => setMessage(""), 3000);
-    return;
-  }
-
-  if (!isConfirmed || !orderId) {
-    setMessage("Please confirm your order first");
-    setTimeout(() => setMessage(""), 3000);
-    return;
-  }
-
-  try {
-    // Send POST request with order_id
-    const response = await API.post("create-payment/", {
-      order_id: orderId  // Only send order_id, not amount
-    });
-    
-    const paymentUrl = response.data.payment_url;
-
-    if (paymentUrl) {
-      // Redirect to PayFast
-      window.location.href = paymentUrl;
-    } else {
-      setMessage("Payment URL not received. Please try again.");
-      setTimeout(() => setMessage(""), 3000);
+    } catch (error) {
+      console.error("Checkout error:", error.response?.data || error);
+      setMessage(error.response?.data?.error || "Failed to confirm order");
+    } finally {
+      setConfirmLoading(false);
     }
-  } catch (error) {
-    console.error("Payment error:", error.response?.data || error);
-    setMessage(error.response?.data?.error || "Payment error. Try again.");
-    setTimeout(() => setMessage(""), 3000);
-  }
-};
+  };
+
+  /** 🔥 6. PayFast Payment - Use confirmed order total */
+  const payWithPayFast = async () => {
+    if (!isConfirmed || !orderId) {
+      setMessage("Please confirm your order first");
+      setTimeout(() => setMessage(""), 3000);
+      return;
+    }
+
+    if (confirmedOrderTotal <= 0) {
+      setMessage("Invalid order amount. Please contact support.");
+      setTimeout(() => setMessage(""), 3000);
+      return;
+    }
+
+    setPaymentLoading(true);
+    setMessage("");
+
+    try {
+      console.log("💳 Initiating PayFast payment for order:", orderId);
+      console.log("💳 Order total for PayFast:", confirmedOrderTotal);
+      
+      // Send POST request with order_id
+      const response = await API.post("create-payment/", {
+        order_id: orderId  // Backend should use this to get the amount
+      });
+      
+      const paymentUrl = response.data.payment_url;
+
+      if (paymentUrl) {
+        // Show payment info before redirecting
+        setMessage(`Redirecting to PayFast to pay R${confirmedOrderTotal.toFixed(2)}...`);
+        
+        // Small delay to show message before redirect
+        setTimeout(() => {
+          // Redirect to PayFast
+          window.location.href = paymentUrl;
+        }, 1000);
+      } else {
+        setMessage("Payment URL not received. Please try again.");
+        setTimeout(() => setMessage(""), 3000);
+      }
+    } catch (error) {
+      console.error("Payment error:", error.response?.data || error);
+      setMessage(error.response?.data?.error || "Payment error. Try again.");
+      setTimeout(() => setMessage(""), 3000);
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
 
   // Helper function to get product details from item
   const getProductInfo = (item) => {
@@ -308,6 +361,9 @@ const payWithPayFast = async () => {
       };
     }
   };
+
+  // Calculate display total based on confirmation status
+  const displayTotal = isConfirmed ? confirmedOrderTotal : total;
 
   return (
     <div className="p-4 bg-gray-50 min-h-screen">
@@ -332,8 +388,10 @@ const payWithPayFast = async () => {
 
       {message && (
         <div className={`p-3 rounded text-white text-center mb-4 ${
-          message.includes("error") || message.includes("Failed") 
+          message.includes("error") || message.includes("Failed") || message.includes("Invalid")
             ? "bg-red-500" 
+            : message.includes("Redirecting")
+            ? "bg-blue-500"
             : "bg-green-500"
         }`}>
           {message}
@@ -399,7 +457,7 @@ const payWithPayFast = async () => {
                             <button
                               onClick={() => handleDecreaseQuantity(product.id)}
                               disabled={loading[product.id] || isConfirmed}
-                              className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50"
+                              className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {loading[product.id] === "decrease" ? (
                                 <div className="h-4 w-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
@@ -415,7 +473,7 @@ const payWithPayFast = async () => {
                             <button
                               onClick={() => handleIncreaseQuantity(product.id)}
                               disabled={loading[product.id] || isConfirmed}
-                              className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#969195] text-white hover:bg-[#847b80] transition-colors disabled:opacity-50"
+                              className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#969195] text-white hover:bg-[#847b80] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {loading[product.id] === "increase" ? (
                                 <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -428,7 +486,7 @@ const payWithPayFast = async () => {
                           <button
                             onClick={() => handleRemoveItem(product.id)}
                             disabled={loading[product.id] || isConfirmed}
-                            className="p-2 text-red-500 hover:text-red-700 transition-colors disabled:opacity-50"
+                            className="p-2 text-red-500 hover:text-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             {loading[product.id] === "remove" ? (
                               <div className="h-4 w-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
@@ -446,8 +504,13 @@ const payWithPayFast = async () => {
               <div className="mt-4 pt-4 border-t">
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="text-sm text-gray-500">Total Amount</p>
-                    <p className="text-xl font-bold text-[#969195]">R{total.toFixed(2)}</p>
+                    <p className="text-sm text-gray-500">
+                      {isConfirmed ? "Confirmed Order Total" : "Estimated Total"}
+                    </p>
+                    <p className="text-xl font-bold text-[#969195]">R{displayTotal.toFixed(2)}</p>
+                    {isConfirmed && orderId && (
+                      <p className="text-xs text-green-600 mt-1">Order #{orderId}</p>
+                    )}
                   </div>
                   <p className="text-sm text-gray-500">
                     {orderedItems.length} item{orderedItems.length !== 1 ? 's' : ''}
@@ -459,176 +522,181 @@ const payWithPayFast = async () => {
 
           {/* Desktop Layout: Side by Side */}
           <div className="hidden lg:grid lg:grid-cols-3 gap-6">
-  {/* Left Column - Address & Form */}
-  <div className="lg:col-span-2">
-    {/* User Status */}
-    <div className={`p-4 rounded-xl mb-6 ${isLoggedIn ? 'bg-blue-50 border border-blue-200' : 'bg-yellow-50 border border-yellow-200'}`}>
-      <div className="flex items-center gap-3">
-        <User size={20} className={isLoggedIn ? "text-blue-600" : "text-yellow-600"} />
-        <div>
-          <p className={`font-medium ${isLoggedIn ? 'text-blue-700' : 'text-yellow-700'}`}>
-            {isLoggedIn ? `Welcome, ${userInfo?.email}` : 'Guest Checkout'}
-          </p>
-          <p className={`text-sm ${isLoggedIn ? 'text-blue-600' : 'text-yellow-600'}`}>
-            {isLoggedIn 
-              ? 'Your order will be linked to your account'
-              : 'Sign in for order tracking and faster checkout'
-            }
-          </p>
-        </div>
-      </div>
-    </div>
+            {/* Left Column - Address & Form */}
+            <div className="lg:col-span-2">
+              {/* User Status */}
+              <div className={`p-4 rounded-xl mb-6 ${isLoggedIn ? 'bg-blue-50 border border-blue-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+                <div className="flex items-center gap-3">
+                  <User size={20} className={isLoggedIn ? "text-blue-600" : "text-yellow-600"} />
+                  <div>
+                    <p className={`font-medium ${isLoggedIn ? 'text-blue-700' : 'text-yellow-700'}`}>
+                      {isLoggedIn ? `Welcome, ${userInfo?.email}` : 'Guest Checkout'}
+                    </p>
+                    <p className={`text-sm ${isLoggedIn ? 'text-blue-600' : 'text-yellow-600'}`}>
+                      {isLoggedIn 
+                        ? 'Your order will be linked to your account'
+                        : 'Sign in for order tracking and faster checkout'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-    {/* Shipping Address Form */}
-    <div className="bg-white rounded-xl shadow-sm border p-6">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-[#969195] rounded-lg">
-          <MapPin size={20} className="text-white" />
-        </div>
-        <div>
-          <h3 className="font-bold text-xl text-gray-900">Shipping Address</h3>
-          <p className="text-gray-500 text-sm">Where should we deliver your order?</p>
-        </div>
-      </div>
-      
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Full Name *
-            </label>
-            <input
-              type="text"
-              name="full_name"
-              value={address.full_name}
-              onChange={handleAddressChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all"
-              placeholder="John Doe"
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Phone Number *
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              value={address.phone}
-              onChange={handleAddressChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all"
-              placeholder="0712345678"
-              required
-            />
-          </div>
-          
-          {/* ADD EMAIL FIELD HERE for Desktop */}
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address *
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={address.email || (isLoggedIn ? userInfo?.email : "")}
-              onChange={handleAddressChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all"
-              placeholder="your@email.com"
-              required={!isLoggedIn}
-              disabled={isLoggedIn}
-            />
-            {isLoggedIn && (
-              <p className="text-xs text-gray-500 mt-1">Using your account email</p>
-            )}
-          </div>
-          
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Street Address *
-            </label>
-            <input
-              type="text"
-              name="street"
-              value={address.street}
-              onChange={handleAddressChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all"
-              placeholder="123 Main Street, Suburb"
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              City *
-            </label>
-            <input
-              type="text"
-              name="city"
-              value={address.city}
-              onChange={handleAddressChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all"
-              placeholder="Cape Town"
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Province *
-            </label>
-            <select
-              name="province"
-              value={address.province}
-              onChange={handleAddressChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all"
-              required
-            >
-              <option value="">Select Province</option>
-              <option value="Eastern Cape">Eastern Cape</option>
-              <option value="Free State">Free State</option>
-              <option value="Gauteng">Gauteng</option>
-              <option value="KwaZulu-Natal">KwaZulu-Natal</option>
-              <option value="Limpopo">Limpopo</option>
-              <option value="Mpumalanga">Mpumalanga</option>
-              <option value="North West">North West</option>
-              <option value="Northern Cape">Northern Cape</option>
-              <option value="Western Cape">Western Cape</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Postal Code *
-            </label>
-            <input
-              type="text"
-              name="postal_code"
-              value={address.postal_code}
-              onChange={handleAddressChange}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all"
-              placeholder="8000"
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Country
-            </label>
-            <input
-              type="text"
-              name="country"
-              value={address.country}
-              onChange={handleAddressChange}
-              className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50"
-              disabled
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+              {/* Shipping Address Form */}
+              <div className="bg-white rounded-xl shadow-sm border p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-[#969195] rounded-lg">
+                    <MapPin size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-xl text-gray-900">Shipping Address</h3>
+                    <p className="text-gray-500 text-sm">Where should we deliver your order?</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Full Name *
+                      </label>
+                      <input
+                        type="text"
+                        name="full_name"
+                        value={address.full_name}
+                        onChange={handleAddressChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
+                        placeholder="John Doe"
+                        required
+                        disabled={isConfirmed}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Phone Number *
+                      </label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={address.phone}
+                        onChange={handleAddressChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
+                        placeholder="0712345678"
+                        required
+                        disabled={isConfirmed}
+                      />
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={address.email}
+                        onChange={handleAddressChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
+                        placeholder="your@email.com"
+                        required
+                        disabled={isLoggedIn || isConfirmed}
+                      />
+                      {isLoggedIn && (
+                        <p className="text-xs text-gray-500 mt-1">Using your account email</p>
+                      )}
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Street Address *
+                      </label>
+                      <input
+                        type="text"
+                        name="street"
+                        value={address.street}
+                        onChange={handleAddressChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
+                        placeholder="123 Main Street, Suburb"
+                        required
+                        disabled={isConfirmed}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        City *
+                      </label>
+                      <input
+                        type="text"
+                        name="city"
+                        value={address.city}
+                        onChange={handleAddressChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
+                        placeholder="Cape Town"
+                        required
+                        disabled={isConfirmed}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Province *
+                      </label>
+                      <select
+                        name="province"
+                        value={address.province}
+                        onChange={handleAddressChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
+                        required
+                        disabled={isConfirmed}
+                      >
+                        <option value="">Select Province</option>
+                        <option value="Eastern Cape">Eastern Cape</option>
+                        <option value="Free State">Free State</option>
+                        <option value="Gauteng">Gauteng</option>
+                        <option value="KwaZulu-Natal">KwaZulu-Natal</option>
+                        <option value="Limpopo">Limpopo</option>
+                        <option value="Mpumalanga">Mpumalanga</option>
+                        <option value="North West">North West</option>
+                        <option value="Northern Cape">Northern Cape</option>
+                        <option value="Western Cape">Western Cape</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Postal Code *
+                      </label>
+                      <input
+                        type="text"
+                        name="postal_code"
+                        value={address.postal_code}
+                        onChange={handleAddressChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
+                        placeholder="8000"
+                        required
+                        disabled={isConfirmed}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Country
+                      </label>
+                      <input
+                        type="text"
+                        name="country"
+                        value={address.country}
+                        onChange={handleAddressChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50"
+                        disabled
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* Right Column - Order Summary (Desktop) */}
             <div className="hidden lg:block">
@@ -661,7 +729,7 @@ const payWithPayFast = async () => {
                               <button
                                 onClick={() => handleDecreaseQuantity(product.id)}
                                 disabled={loading[product.id] || isConfirmed}
-                                className="w-6 h-6 flex items-center justify-center rounded bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50"
+                                className="w-6 h-6 flex items-center justify-center rounded bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <Minus size={12} />
                               </button>
@@ -669,7 +737,7 @@ const payWithPayFast = async () => {
                               <button
                                 onClick={() => handleIncreaseQuantity(product.id)}
                                 disabled={loading[product.id] || isConfirmed}
-                                className="w-6 h-6 flex items-center justify-center rounded bg-[#969195] text-white hover:bg-[#847b80] transition-colors disabled:opacity-50"
+                                className="w-6 h-6 flex items-center justify-center rounded bg-[#969195] text-white hover:bg-[#847b80] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 <Plus size={12} />
                               </button>
@@ -686,8 +754,8 @@ const payWithPayFast = async () => {
                 
                 <div className="space-y-4">
                   <div className="flex justify-between items-center text-lg font-bold">
-                    <span>Total</span>
-                    <span className="text-xl text-[#969195]">R{total.toFixed(2)}</span>
+                    <span>{isConfirmed ? "Confirmed Total" : "Total"}</span>
+                    <span className="text-xl text-[#969195]">R{displayTotal.toFixed(2)}</span>
                   </div>
                   
                   {isConfirmed ? (
@@ -702,17 +770,29 @@ const payWithPayFast = async () => {
                         </p>
                         {orderId && (
                           <p className="text-xs text-green-500 mt-1">
-                            Order #{orderId}
+                            Order #{orderId} • R{confirmedOrderTotal.toFixed(2)}
                           </p>
                         )}
                       </div>
                       
                       <button
                         onClick={payWithPayFast}
-                        className="w-full py-4 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-3"
+                        disabled={paymentLoading}
+                        className={`w-full py-4 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-3
+                          ${paymentLoading ? 'opacity-75 cursor-not-allowed' : ''}
+                        `}
                       >
-                        <CreditCard size={22} />
-                        Pay Now with PayFast
+                        {paymentLoading ? (
+                          <>
+                            <Loader className="animate-spin" size={22} />
+                            Processing Payment...
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard size={22} />
+                            Pay R{confirmedOrderTotal.toFixed(2)} with PayFast
+                          </>
+                        )}
                       </button>
                       
                       <p className="text-xs text-gray-500 text-center">
@@ -747,217 +827,150 @@ const payWithPayFast = async () => {
 
           {/* Mobile Actions Footer */}
           <div className="lg:hidden">
-  {/* Shipping Address Form (Mobile) */}
-  <div className="bg-white rounded-xl shadow-sm border p-4 mb-6">
-    <div className="flex items-center gap-3 mb-4">
-      <div className="p-2 bg-[#969195] rounded-lg">
-        <MapPin size={18} className="text-white" />
-      </div>
-      <div>
-        <h3 className="font-bold text-lg text-gray-900">Shipping Address</h3>
-        <p className="text-gray-500 text-sm">Delivery details</p>
-      </div>
-    </div>
-    
-    <div className="space-y-3">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Full Name *
-        </label>
-        <input
-          type="text"
-          name="full_name"
-          value={address.full_name}
-          onChange={handleAddressChange}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
-          placeholder="John Doe"
-          required
-        />
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Phone Number *
-        </label>
-        <input
-          type="tel"
-          name="phone"
-          value={address.phone}
-          onChange={handleAddressChange}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
-          placeholder="0712345678"
-          required
-        />
-      </div>
-      
-      {/* Email field for mobile - MOVE IT HERE */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Email Address *
-        </label>
-        <input
-          type="email"
-          name="email"
-          value={address.email || (isLoggedIn ? userInfo?.email : "")}
-          onChange={handleAddressChange}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
-          placeholder="your@email.com"
-          required={!isLoggedIn}
-          disabled={isLoggedIn}
-        />
-        {isLoggedIn && (
-          <p className="text-xs text-gray-500 mt-1">Using your account email</p>
-        )}
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Street Address *
-        </label>
-        <input
-          type="text"
-          name="street"
-          value={address.street}
-          onChange={handleAddressChange}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
-          placeholder="123 Main Street, Suburb"
-          required
-        />
-      </div>
-      
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            City *
-          </label>
-          <input
-            type="text"
-            name="city"
-            value={address.city}
-            onChange={handleAddressChange}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
-            placeholder="Cape Town"
-            required
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Province *
-          </label>
-          <select
-            name="province"
-            value={address.province}
-            onChange={handleAddressChange}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
-            required
-          >
-            <option value="">Select Province</option>
-            <option value="Eastern Cape">Eastern Cape</option>
-            <option value="Free State">Free State</option>
-            <option value="Gauteng">Gauteng</option>
-            <option value="KwaZulu-Natal">KwaZulu-Natal</option>
-            <option value="Limpopo">Limpopo</option>
-            <option value="Mpumalanga">Mpumalanga</option>
-            <option value="North West">North West</option>
-            <option value="Northern Cape">Northern Cape</option>
-            <option value="Western Cape">Western Cape</option>
-          </select>
-        </div>
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Postal Code *
-        </label>
-        <input
-          type="text"
-          name="postal_code"
-          value={address.postal_code}
-          onChange={handleAddressChange}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent"
-          placeholder="8000"
-          required
-        />
-      </div>
-    </div>
-  </div>
+            {/* Shipping Address Form (Mobile) */}
+            <div className="bg-white rounded-xl shadow-sm border p-4 mb-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-[#969195] rounded-lg">
+                  <MapPin size={18} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-gray-900">Shipping Address</h3>
+                  <p className="text-gray-500 text-sm">Delivery details</p>
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="full_name"
+                    value={address.full_name}
+                    onChange={handleAddressChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent disabled:bg-gray-50 disabled:cursor-not-allowed"
+                    placeholder="John Doe"
+                    required
+                    disabled={isConfirmed}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number *
+                  </label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={address.phone}
+                    onChange={handleAddressChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent disabled:bg-gray-50 disabled:cursor-not-allowed"
+                    placeholder="0712345678"
+                    required
+                    disabled={isConfirmed}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={address.email}
+                    onChange={handleAddressChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent disabled:bg-gray-50 disabled:cursor-not-allowed"
+                    placeholder="your@email.com"
+                    required
+                    disabled={isLoggedIn || isConfirmed}
+                  />
+                  {isLoggedIn && (
+                    <p className="text-xs text-gray-500 mt-1">Using your account email</p>
+                  )}
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Street Address *
+                  </label>
+                  <input
+                    type="text"
+                    name="street"
+                    value={address.street}
+                    onChange={handleAddressChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent disabled:bg-gray-50 disabled:cursor-not-allowed"
+                    placeholder="123 Main Street, Suburb"
+                    required
+                    disabled={isConfirmed}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      City *
+                    </label>
+                    <input
+                      type="text"
+                      name="city"
+                      value={address.city}
+                      onChange={handleAddressChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent disabled:bg-gray-50 disabled:cursor-not-allowed"
+                      placeholder="Cape Town"
+                      required
+                      disabled={isConfirmed}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Province *
+                    </label>
+                    <select
+                      name="province"
+                      value={address.province}
+                      onChange={handleAddressChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent disabled:bg-gray-50 disabled:cursor-not-allowed"
+                      required
+                      disabled={isConfirmed}
+                    >
+                      <option value="">Select Province</option>
+                      <option value="Eastern Cape">Eastern Cape</option>
+                      <option value="Free State">Free State</option>
+                      <option value="Gauteng">Gauteng</option>
+                      <option value="KwaZulu-Natal">KwaZulu-Natal</option>
+                      <option value="Limpopo">Limpopo</option>
+                      <option value="Mpumalanga">Mpumalanga</option>
+                      <option value="North West">North West</option>
+                      <option value="Northern Cape">Northern Cape</option>
+                      <option value="Western Cape">Western Cape</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Postal Code *
+                  </label>
+                  <input
+                    type="text"
+                    name="postal_code"
+                    value={address.postal_code}
+                    onChange={handleAddressChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#969195] focus:border-transparent disabled:bg-gray-50 disabled:cursor-not-allowed"
+                    placeholder="8000"
+                    required
+                    disabled={isConfirmed}
+                  />
+                </div>
+              </div>
+            </div>
 
             {/* Mobile Action Buttons */}
             <div className="bg-white rounded-xl shadow-sm border p-4 sticky bottom-4">
               <div className="flex justify-between items-center mb-4">
                 <div>
-                  <p className="text-sm text-gray-500">Total Amount</p>
-                  <p className="text-xl font-bold text-[#969195]">R{total.toFixed(2)}</p>
-                </div>
-                {isConfirmed && orderId && (
-                  <div className="text-right">
-                    <p className="text-xs text-green-600 font-medium">Order #{orderId}</p>
-                    <p className="text-xs text-green-500">Confirmed ✓</p>
-                  </div>
-                )}
-              </div>
-              
-              {isConfirmed ? (
-                <div className="space-y-3">
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <div className="flex items-center gap-2 text-green-700">
-                      <CheckCircle size={18} />
-                      <span className="font-semibold text-sm">Ready for Payment</span>
-                    </div>
-                    <p className="text-xs text-green-600 mt-1">
-                      Your shipping details are saved securely
-                    </p>
-                  </div>
-                  
-                  <button
-                    onClick={payWithPayFast}
-                    className="w-full py-4 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-3"
-                  >
-                    <CreditCard size={20} />
-                    Pay Now with PayFast
-                  </button>
-                  
-                  <p className="text-xs text-gray-500 text-center">
-                    Secure payment • Visa/Mastercard accepted
-                  </p>
-                </div>
-              ) : (
-                <button
-                  onClick={confirmOrder}
-                  disabled={confirmLoading}
-                  className={`w-full py-4 rounded-lg font-bold transition-colors flex items-center justify-center gap-3
-                    ${confirmLoading ? "bg-gray-400 cursor-not-allowed" : "bg-[#969195] text-white hover:bg-[#847b80]"}
-                  `}
-                >
-                  {confirmLoading ? (
-                    <>
-                      <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <Truck size={20} />
-                      Confirm Order & Shipping
-                    </>
-                  )}
-                </button>
-              )}
-              
-              {!isLoggedIn && !isConfirmed && (
-                <div className="text-center mt-4">
-                  <button
-                    onClick={() => navigate("/login", { state: { fromCheckout: true } })}
-                    className="text-sm text-blue-600 hover:text-blue-800 underline"
-                  >
-                    Sign in for faster checkout
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+                  <p className="text-sm text-gray-500">
+                    {is
