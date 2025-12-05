@@ -290,16 +290,14 @@ export default function Home() {
                       className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full"
                     >
                       <div className="p-3 sm:p-4 flex flex-col flex-grow">
-                      <div className="w-full rounded-lg bg-white flex items-center justify-center mb-3 sm:mb-4">
+                      <div className="w-full bg-white rounded-lg flex items-center justify-center mb-3 sm:mb-4 min-h-40">
                         <img
                           src={p.image || "/default-product.png"}
                           alt={p.name}
-                          className="w-full h-auto max-h-48 object-contain p-1"
-                          onError={(e) => {
-                            e.target.src = "/default-product.png";
-                          }}
+                          className="max-w-full max-h-40 object-contain"
                         />
                       </div>
+
 
 
                         
