@@ -973,4 +973,93 @@ export default function Checkout() {
               <div className="flex justify-between items-center mb-4">
                 <div>
                   <p className="text-sm text-gray-500">
-                    {is
+                    {isConfirmed ? "Confirmed Order Total" : "Total Amount"}
+                  </p>
+                  <p className="text-xl font-bold text-[#969195]">R{displayTotal.toFixed(2)}</p>
+                </div>
+                {isConfirmed && orderId && (
+                  <div className="text-right">
+                    <p className="text-xs text-green-600 font-medium">Order #{orderId}</p>
+                    <p className="text-xs text-green-500">Confirmed ✓</p>
+                  </div>
+                )}
+              </div>
+              
+              {isConfirmed ? (
+                <div className="space-y-3">
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-green-700">
+                      <CheckCircle size={18} />
+                      <span className="font-semibold text-sm">Ready for Payment</span>
+                    </div>
+                    <p className="text-xs text-green-600 mt-1">
+                      Your shipping details are saved securely
+                    </p>
+                    <p className="text-xs text-green-500 mt-1">
+                      Amount: R{confirmedOrderTotal.toFixed(2)}
+                    </p>
+                  </div>
+                  
+                  <button
+                    onClick={payWithPayFast}
+                    disabled={paymentLoading}
+                    className={`w-full py-4 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-3
+                      ${paymentLoading ? 'opacity-75 cursor-not-allowed' : ''}
+                    `}
+                  >
+                    {paymentLoading ? (
+                      <>
+                        <Loader className="animate-spin" size={20} />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard size={20} />
+                        Pay R{confirmedOrderTotal.toFixed(2)} with PayFast
+                      </>
+                    )}
+                  </button>
+                  
+                  <p className="text-xs text-gray-500 text-center">
+                    Secure payment • Visa/Mastercard accepted
+                  </p>
+                </div>
+              ) : (
+                <button
+                  onClick={confirmOrder}
+                  disabled={confirmLoading}
+                  className={`w-full py-4 rounded-lg font-bold transition-colors flex items-center justify-center gap-3
+                    ${confirmLoading ? "bg-gray-400 cursor-not-allowed" : "bg-[#969195] text-white hover:bg-[#847b80]"}
+                  `}
+                >
+                  {confirmLoading ? (
+                    <>
+                      <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Truck size={20} />
+                      Confirm Order & Shipping
+                    </>
+                  )}
+                </button>
+              )}
+              
+              {!isLoggedIn && !isConfirmed && (
+                <div className="text-center mt-4">
+                  <button
+                    onClick={() => navigate("/login", { state: { fromCheckout: true } })}
+                    className="text-sm text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Sign in for faster checkout
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
