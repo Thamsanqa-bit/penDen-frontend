@@ -286,99 +286,118 @@ export default function Home() {
                   
                   return (
                     <div
-                      key={p.id}
-                      className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full"
-                    >
-                      <div className="p-3 sm:p-4 flex flex-col flex-grow">
-                      <div className="w-full bg-white rounded-lg flex items-center justify-center mb-3 sm:mb-4 min-h-40">
-                        <img
-                          src={p.image || "/default-product.png"}
-                          alt={p.name}
-                          className="max-w-full max-h-40 object-contain"
-                        />
-                      </div>
+  key={p.id}
+  className="
+    bg-white rounded-xl shadow-sm border border-gray-200
+    hover:shadow-md transition-all duration-300
+    flex flex-col h-full
+  "
+>
+  <div className="p-3 sm:p-4 flex flex-col flex-grow">
 
+    {/* Product Image */}
+    <div className="w-full bg-white rounded-lg flex items-center justify-center mb-3 sm:mb-4 h-44 sm:h-48">
+      <img
+        src={p.image || '/default-product.png'}
+        alt={p.name}
+        className="max-h-full max-w-full object-contain"
+      />
+    </div>
 
+    {/* Product Name */}
+    <h3 className="font-semibold text-sm sm:text-base text-gray-900 line-clamp-2 min-h-[3rem] mb-1">
+      {p.name}
+    </h3>
 
-                        
-                        <h3 className="font-semibold text-base sm:text-lg mb-2 line-clamp-2 min-h-[3rem] sm:min-h-[3.5rem]">
-                          {p.name}
-                        </h3>
-                        
-                        <p className="text-gray-800 font-bold text-lg sm:text-xl mb-3 sm:mb-4 flex-shrink-0">
-                          R{Number(p.price).toFixed(2)}
-                        </p>
+    {/* Rating + Stock */}
+    <div className="flex items-center text-xs text-gray-500 mb-2">
+      ⭐ 4.5 (120) • In Stock
+    </div>
 
-                        <div className="mt-auto pt-3 sm:pt-4">
-                          {isInCart ? (
-                            <div className="space-y-2 sm:space-y-3">
-                              <div className="flex items-center justify-between bg-gray-50 p-2 rounded-lg">
-                                <button
-                                  onClick={() => handleRemoveFromCart(p.id)}
-                                  disabled={isLoading}
-                                  className="bg-gray-600 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full hover:bg-gray-700 transition-colors duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                                  title="Remove one"
-                                  aria-label="Remove one item"
-                                >
-                                  {isLoading ? (
-                                    <div className="h-4 w-4 sm:h-5 sm:w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                  ) : (
-                                    <span className="text-lg sm:text-xl font-bold">−</span>
-                                  )}
-                                </button>
-                                
-                                <div className="text-center px-1 sm:px-2 min-w-[50px] sm:min-w-[60px]">
-                                  <span className="font-bold text-base sm:text-lg block">{qty}</span>
-                                  <span className="text-xs text-gray-500">in cart</span>
-                                </div>
-                                
-                                <button
-                                  onClick={() => handleAddToCart(p.id)}
-                                  disabled={isLoading}
-                                  className="bg-gray-600 text-white w-8 h-8 sm:w-10 sm:h-10 rounded-full hover:bg-gray-700 transition-colors duration-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                                  title="Add one more"
-                                  aria-label="Add one more item"
-                                >
-                                  {isLoading ? (
-                                    <div className="h-4 w-4 sm:h-5 sm:w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                  ) : (
-                                    <span className="text-lg sm:text-xl font-bold">+</span>
-                                  )}
-                                </button>
-                              </div>
-                              
-                              {/* <button
-                                onClick={() => handleRemoveFromCart(p.id, true)}
-                                disabled={isLoading}
-                                className="w-full text-xs sm:text-sm text-red-600 py-2 px-3 sm:px-4 rounded-lg border border-red-300 hover:bg-red-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                Remove All
-                              </button> */}
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => handleAddToCart(p.id)}
-                              disabled={isLoading}
-                              className="w-full bg-gray-600 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg hover:bg-gray-700 transition-colors duration-200 font-medium flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {isLoading ? (
-                                <>
-                                  <div className="h-4 w-4 sm:h-5 sm:w-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                                  <span className="text-sm sm:text-base">Adding...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                  </svg>
-                                  <span className="text-sm sm:text-base">Add to Cart</span>
-                                </>
-                              )}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+    {/* Price */}
+    <p className="text-gray-900 font-bold text-lg sm:text-xl mb-3">
+      R{Number(p.price).toFixed(2)}
+    </p>
+
+    {/* Add / Remove Buttons */}
+    <div className="mt-auto">
+      {isInCart ? (
+        <div className="space-y-3">
+
+          {/* Quantity Bar */}
+          <div className="
+            flex items-center justify-between
+            border border-gray-300 rounded-lg
+            px-3 py-2 bg-gray-50
+          ">
+            <button
+              onClick={() => handleRemoveFromCart(p.id)}
+              disabled={isLoading}
+              className="
+                w-8 h-8 flex items-center justify-center
+                bg-white text-gray-700 border border-gray-300 rounded
+                hover:bg-gray-100 transition disabled:opacity-40
+              "
+            >
+              {isLoading ? (
+                <div className="h-4 w-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <span className="text-lg font-bold">−</span>
+              )}
+            </button>
+
+            <span className="font-bold text-base">{qty}</span>
+
+            <button
+              onClick={() => handleAddToCart(p.id)}
+              disabled={isLoading}
+              className="
+                w-8 h-8 flex items-center justify-center
+                bg-white text-gray-700 border border-gray-300 rounded
+                hover:bg-gray-100 transition disabled:opacity-40
+              "
+            >
+              {isLoading ? (
+                <div className="h-4 w-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <span className="text-lg font-bold">+</span>
+              )}
+            </button>
+          </div>
+
+          {/* Remove All */}
+          <button
+            onClick={() => handleRemoveFromCart(p.id, true)}
+            className="w-full text-xs text-red-600 hover:text-red-700"
+          >
+            Remove item
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => handleAddToCart(p.id)}
+          className="
+            w-full bg-blue-600 text-white py-2 rounded-lg
+            hover:bg-blue-700 transition
+            flex items-center justify-center space-x-2
+          "
+        >
+          {isLoading ? (
+            <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          ) : (
+            <>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
+              </svg>
+              <span>Add to Cart</span>
+            </>
+          )}
+        </button>
+      )}
+    </div>
+  </div>
+</div>
+
                   );
                 })
               )}
