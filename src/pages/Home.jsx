@@ -291,14 +291,15 @@ export default function Home() {
                     >
                       <div className="p-3 sm:p-4 flex flex-col flex-grow">
                         <div className="h-40 sm:h-48 w-full mb-3 sm:mb-4 overflow-hidden rounded-lg flex-shrink-0">
-                          <img
-                            src={p.image || "/default-product.png"}
-                            alt={p.name}
-                            className="h-full w-full object-cover hover:scale-105 transition-transform duration-300"
-                            onError={(e) => {
-                              e.target.src = "/default-product.png";
-                            }}
-                          />
+                        <img
+                          src={p.image || "/default-product.png"}
+                          alt={p.name}
+                          className="h-full w-full object-contain bg-white p-1"
+                          onError={(e) => {
+                            e.target.src = "/default-product.png";
+                          }}
+                        />
+
                         </div>
                         
                         <h3 className="font-semibold text-base sm:text-lg mb-2 line-clamp-2 min-h-[3rem] sm:min-h-[3.5rem]">
