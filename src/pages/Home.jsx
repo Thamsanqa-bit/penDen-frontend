@@ -290,7 +290,8 @@ export default function Home() {
                       className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full"
                     >
                       <div className="p-3 sm:p-4 flex flex-col flex-grow">
-                        <div className="h-40 sm:h-48 w-full mb-3 sm:mb-4 overflow-hidden rounded-lg flex-shrink-0">
+                        <div className="h-44 sm:h-48 w-full mb-3 sm:mb-4 overflow-hidden rounded-lg flex-shrink-0 bg-white">
+
                         <img
                           src={p.image || "/default-product.png"}
                           alt={p.name}
