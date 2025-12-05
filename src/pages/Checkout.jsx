@@ -268,7 +268,8 @@ const payWithPayFast = async () => {
   try {
     // Send POST request with order_id
     const response = await API.post("create-payment/", {
-      order_id: orderId  // Only send order_id, not amount
+      order_id: orderId, // Only send order_id, not amount
+      amount: total,  
     });
     
     const paymentUrl = response.data.payment_url;
