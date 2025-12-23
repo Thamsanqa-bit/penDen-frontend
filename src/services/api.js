@@ -32,7 +32,7 @@ import axios from "axios";
 
 // Use environment variable for base URL
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://penden-backend.onrender.com/api/'
+  ? 'https://penden.store/api/'
   : 'http://127.0.0.1:8000/api/';
 
 const API = axios.create({
