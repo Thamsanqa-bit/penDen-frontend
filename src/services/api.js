@@ -1,16 +1,3 @@
-// services/api.js
-// import axios from 'axios';
-
-// // Adjust this base URL based on your Django setup
-// const API = axios.create({
-//   baseURL: 'http://127.0.0.1:8000/api/', // Make sure this ends with /api/
-//   headers: {
-//     'Content-Type': 'application/json',
-//   },
-//   withCredentials: true, // Important for session cookies
-// });
-
-// export default API;
 // Function to get CSRF token from cookies
 function getCSRFToken() {
   const name = 'csrftoken';
