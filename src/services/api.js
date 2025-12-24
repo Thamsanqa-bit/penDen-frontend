@@ -18,9 +18,15 @@ function getCSRFToken() {
 import axios from "axios";
 
 // Use environment variable for base URL
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://api.penden.store/api/'
-  : 'http://127.0.0.1:8000/api/';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 
+  (process.env.NODE_ENV === 'production' 
+    ? 'https://api.penden.store/api/'
+    : 'http://127.0.0.1:8000/api/');;
+
+    // Add this in api.js or main App component
+console.log('API Base URL:', API_BASE_URL);
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
 
 const API = axios.create({
   baseURL: API_BASE_URL,
