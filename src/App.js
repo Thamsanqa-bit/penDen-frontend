@@ -10,6 +10,15 @@ import MirrorsPage from "./components/SideBar";
 
 
 export default function App() {
+  // In your main App.js or index.js
+if (window.location.hostname.includes('penden.store')) {
+  // Clear old localStorage if migrating
+  const oldKeys = Object.keys(localStorage).filter(key => 
+    key.includes('penden.online') || 
+    localStorage.getItem(key)?.includes('penden.online')
+  );
+  oldKeys.forEach(key => localStorage.removeItem(key));
+}
   return (
     <Router>
       <div className="min-h-screen flex flex-col bg-gray-50">
