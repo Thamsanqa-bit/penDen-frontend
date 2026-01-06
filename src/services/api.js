@@ -34,26 +34,19 @@ const API = axios.create({
   withCredentials: true,  // Set to true if using session auth
 });
 
-API.defaults.timeout = 10000;
-// Clear any cached requests
-API.interceptors.request.use(config => {
-  config.params = config.params || {};
-  config.params['_t'] = new Date().getTime(); // Prevent caching
-  return config;
-});
 // Request interceptor
-// API.interceptors.request.use(
-//   (config) => {
-//     const token = localStorage.getItem("token");
-//     if (token) {
-//       config.headers.Authorization = `Token ${token}`;
-//     }
-//     return config;
-//   },
-//   (error) => {
-//     return Promise.reject(error);
-//   }
-// );
+API.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Token ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // Response interceptor for error handling
 API.interceptors.response.use(
