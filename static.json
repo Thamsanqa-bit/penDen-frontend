@@ -1,10 +1,9 @@
 {
-    "root": "build",
-    "routes": [
-      {
-        "source": "/**",
-        "destination": "/index.html"
-      }
-    ]
-  }
-  
+  "root": "build",
+  "routes": [
+    {
+      "source": "/**",
+      "destination": "/index.html"
+    }
+  ]
+}
