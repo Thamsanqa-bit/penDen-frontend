@@ -16,7 +16,7 @@ export default function SidebarWithStationeryUpload() {
 
   const categories = [
     { name: "Frames", value: "Frames" },
-    { name: "Stationery", value: "Stationery" },
+    { name: "Stationery", value: "Stationeries" },
     { name: "Printing", value: "Printing" },
     { name: "Mirrors", value: "Mirrors" },
   ];
