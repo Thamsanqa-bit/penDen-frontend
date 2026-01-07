@@ -238,6 +238,122 @@ export default function Home() {
             {message.text}
           </div>
         )}
+{/* Featured Categories (Mobile + Desktop) */}
+<div className="mb-6">
+
+  {/* MOBILE FEATURED CATEGORIES */}
+  <div className="md:hidden mb-6 px-1">
+    <h2 className="text-lg font-semibold mb-3 text-gray-900">
+      Featured Categories
+    </h2>
+
+    <div className="flex overflow-x-auto space-x-4 pb-2 scrollbar-hide category-scroll">
+      {["Frames","Stationery","Printing","Mirrors"].map((name) => (
+        <button
+          key={name}
+          onClick={() => navigate(`/?category=${name}`)}
+          className="category-button category-item
+            flex flex-col items-center justify-center
+            min-w-[90px] bg-white p-4 rounded-2xl border shadow-sm"
+        >
+          <div className="category-icon w-14 h-14 rounded-full flex items-center justify-center mb-2">
+            <svg
+              className="w-6 h-6 text-gray-700"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 6v12m6-6H6"
+              />
+            </svg>
+          </div>
+
+          <span className="text-sm font-semibold text-gray-800">
+            {name}
+          </span>
+        </button>
+      ))}
+    </div>
+  </div>
+
+  {/* DESKTOP SIDEBAR CATEGORIES */}
+  <div className="hidden md:block mb-6">
+    <h2 className="text-lg font-semibold mb-3">Categories</h2>
+    <ul className="space-y-2 text-sm">
+      {["Frames","Stationery","Printing","Mirrors"].map((name,index)=>(
+        <li
+          key={index}
+          onClick={() => navigate(`/?category=${name}`)}
+          className="cursor-pointer bg-gray-100 hover:bg-gray-200
+            py-2 px-3 rounded-lg flex justify-between items-center
+            transition group"
+        >
+          <span className="font-medium text-gray-700">{name}</span>
+
+          <svg
+            className="w-4 h-4 text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={2} 
+              d="M9 5l7 7-7 7" 
+            />
+          </svg>
+        </li>
+      ))}
+    </ul>
+  </div>
+
+</div>
+
+<style>
+{`
+/* Hide scrollbar */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Horizontal scrolling + snap */
+.category-scroll {
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+}
+.category-item {
+  scroll-snap-align: start;
+}
+
+/* Icon styles */
+.category-icon {
+  background: linear-gradient(135deg, #f3f4f6, #ffffff);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+/* Button hover + tap */
+.category-button {
+  transition: all 0.2s ease-in-out;
+}
+.category-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+}
+.category-button:active {
+  transform: scale(0.96);
+}
+`}
+</style>
 
         
 
