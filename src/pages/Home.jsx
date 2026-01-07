@@ -239,6 +239,52 @@ export default function Home() {
           </div>
         )}
 
+        {/* Featured Categories for Small Screens */}
+<div className="md:hidden mb-6 px-1">
+  <h2 className="text-lg font-semibold mb-3 text-gray-900">
+    Featured Categories
+  </h2>
+
+  <div className="flex overflow-x-auto space-x-4 pb-2 scrollbar-hide category-scroll">
+    {categories.map((cat) => (
+      <button
+        key={cat.value}
+        onClick={() => handleCategoryClick(cat.value)}
+        className={`
+          category-button category-item
+          flex flex-col items-center justify-center
+          min-w-[90px]
+          bg-white p-4 rounded-2xl border
+          shadow-sm
+        `}
+      >
+        {/* Icon circle */}
+        <div className="category-icon w-14 h-14 rounded-full flex items-center justify-center mb-2">
+          <svg
+            className="w-6 h-6 text-gray-700"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 6v12m6-6H6"
+            />
+          </svg>
+        </div>
+
+        {/* Label */}
+        <span className="text-sm font-semibold text-gray-800">
+          {cat.name}
+        </span>
+      </button>
+    ))}
+  </div>
+</div>
+
+
         <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mb-6">
           <div className="text-sm text-gray-600">
             Showing {products.length} of {pagination.total_products} products
