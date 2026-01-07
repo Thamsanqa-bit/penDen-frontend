@@ -251,7 +251,7 @@ export default function Home() {
     <div className="flex overflow-x-auto space-x-4 pb-2 scrollbar-hide category-scroll">
       {[
         { name: "Frames", img: "https://penden-s3.s3.us-east-2.amazonaws.com/frame_cat.jpeg" },
-        { name: "Stationery", img: "/https://penden-s3.s3.us-east-2.amazonaws.com/back_to_school.jpeg" },
+        { name: "Stationery", img: "https://penden-s3.s3.us-east-2.amazonaws.com/back_to_school.jpeg" },
         { name: "Printing", img: "https://penden-s3.s3.us-east-2.amazonaws.com/printing_cat.png" },
         { name: "Mirrors", img: "https://penden-s3.s3.us-east-2.amazonaws.com/mirror_cat.jpg" },
       ].map(({ name, img }) => (
