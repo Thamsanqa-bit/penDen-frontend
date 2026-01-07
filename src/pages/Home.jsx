@@ -238,6 +238,7 @@ export default function Home() {
             {message.text}
           </div>
         )}
+
 {/* Featured Categories (Mobile + Desktop) */}
 <div className="mb-6">
 
@@ -248,28 +249,26 @@ export default function Home() {
     </h2>
 
     <div className="flex overflow-x-auto space-x-4 pb-2 scrollbar-hide category-scroll">
-      {["Frames","Stationery","Printing","Mirrors"].map((name) => (
+      {[
+        { name: "Frames", img: "https://penden-s3.s3.us-east-2.amazonaws.com/frame_cat.jpeg" },
+        { name: "Stationery", img: "/https://penden-s3.s3.us-east-2.amazonaws.com/back_to_school.jpeg" },
+        { name: "Printing", img: "https://penden-s3.s3.us-east-2.amazonaws.com/printing_cat.png" },
+        { name: "Mirrors", img: "https://penden-s3.s3.us-east-2.amazonaws.com/mirror_cat.jpg" },
+      ].map(({ name, img }) => (
         <button
           key={name}
           onClick={() => navigate(`/?category=${name}`)}
-          className="category-button category-item
+          className="category-button category-item 
             flex flex-col items-center justify-center
             min-w-[90px] bg-white p-4 rounded-2xl border shadow-sm"
         >
-          <div className="category-icon w-14 h-14 rounded-full flex items-center justify-center mb-2">
-            <svg
-              className="w-6 h-6 text-gray-700"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 6v12m6-6H6"
-              />
-            </svg>
+          {/* IMAGE ICON */}
+          <div className="category-icon w-14 h-14 rounded-full flex items-center justify-center mb-2 overflow-hidden">
+            <img
+              src={img}
+              alt={name}
+              className="w-full h-full object-cover"
+            />
           </div>
 
           <span className="text-sm font-semibold text-gray-800">
@@ -313,7 +312,6 @@ export default function Home() {
   </div>
 
 </div>
-
 <style>
 {`
 /* Hide scrollbar */
