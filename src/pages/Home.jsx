@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import API from "../services/api";
 import SideBar from "../components/SideBar";
+import Footer from "../components/Footer";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
@@ -279,38 +280,6 @@ export default function Home() {
     </div>
   </div>
 
-  {/* DESKTOP SIDEBAR CATEGORIES */}
-  <div className="hidden md:block mb-6">
-    <h2 className="text-lg font-semibold mb-3">Categories</h2>
-    <ul className="space-y-2 text-sm">
-      {["Frames","Stationery","Printing","Mirrors"].map((name,index)=>(
-        <li
-          key={index}
-          onClick={() => navigate(`/?category=${name}`)}
-          className="cursor-pointer bg-gray-100 hover:bg-gray-200
-            py-2 px-3 rounded-lg flex justify-between items-center
-            transition group"
-        >
-          <span className="font-medium text-gray-700">{name}</span>
-
-          <svg
-            className="w-4 h-4 text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              strokeWidth={2} 
-              d="M9 5l7 7-7 7" 
-            />
-          </svg>
-        </li>
-      ))}
-    </ul>
-  </div>
-
 </div>
 <style>
 {`
@@ -557,6 +526,49 @@ export default function Home() {
           </>
         )}
       </main>
+      
+      {/* WhatsApp Floating Button - Mobile Only */}
+      <div className="md:hidden fixed right-4 bottom-1/2 transform translate-y-1/2 z-50">
+        <a
+          href="https://wa.me/0815244505" // Replace with your WhatsApp number
+          target="_blank"
+          rel="noopener noreferrer"
+          className="
+            flex items-center justify-center
+            w-14 h-14 sm:w-16 sm:h-16
+            bg-green-500 hover:bg-green-600
+            rounded-full shadow-lg
+            transition-all duration-300
+            hover:scale-110 hover:shadow-xl
+            border-2 border-white
+            group
+          "
+          aria-label="Chat on WhatsApp"
+        >
+          {/* WhatsApp Icon */}
+          <svg 
+            className="w-7 h-7 sm:w-8 sm:h-8 text-white group-hover:scale-110 transition-transform" 
+            fill="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path d="M20.5 3.5A10.5 10.5 0 0 0 12 1.5C5.6 1.5.5 6.6.5 13c0 2.3.8 4.5 2.3 6.3l-1.9 5.8 6-1.9c1.8 1.3 4 2 6.3 2 6.4 0 11.5-5.1 11.5-11.5 0-2.8-1-5.4-2.7-7.4zM12 21c-1.9 0-3.7-.5-5.3-1.4l-.4-.2-3.8 1.2 1.2-3.7-.2-.4c-1-1.6-1.4-3.5-1.4-5.5 0-5 4-9 9-9 2.4 0 4.6.9 6.3 2.5 1.7 1.6 2.5 3.8 2.5 6.3 0 5-4 9-9 9zm5.4-6.7c-.3-.2-1.7-.8-1.9-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-1 1.1-.2.2-.4.2-.7.1-.3-.1-1.2-.4-2.3-1.4-.9-.8-1.5-1.8-1.6-2.1-.2-.3 0-.5.1-.7.2-.2.3-.3.5-.3.2 0 .3 0 .4 0 .2 0 .3 0 .4.1.2.1.3.3.4.5.1.2.2.4.3.5.1.2.2.3.3.5.1.2.1.4 0 .5-.1.1-.2.3-.4.4-.2.2-.4.4-.5.5-.2.1-.3.3-.2.5.1.2.5 1 1.2 1.7.8.8 1.7 1.3 2.3 1.5.3.1.5 0 .6-.1.2-.2.4-.5.6-.7.2-.2.3-.2.5-.1.2.1 1.2.6 1.4.7.2.1.4.2.4.3.1.2.1.5-.1.7-.2.3-.9 1.1-1.3 1.4-.4.3-.8.5-.8.5z"/>
+          </svg>
+          
+          {/* Optional: Tooltip on hover */}
+          <span className="
+            absolute right-16
+            bg-gray-900 text-white text-xs
+            py-1 px-2 rounded-lg
+            opacity-0 group-hover:opacity-100
+            transition-opacity duration-200
+            whitespace-nowrap
+            shadow-md
+          ">
+            Chat with us
+          </span>
+        </a>
+      </div>
+      
     </div>
   );
 }

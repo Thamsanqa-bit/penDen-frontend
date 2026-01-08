@@ -1,187 +1,181 @@
-import React from 'react';
+import React from "react";
+import { FaFacebook } from "react-icons/fa";
 
 const Footer = () => {
   const styles = {
     footerContainer: {
-      background: 'linear-gradient(135deg, #3a3a3a 0%, #2d2d2d 100%)',
-      color: '#e0e0e0',
-      padding: '2rem 1rem 1.5rem',
-      fontFamily: "'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif",
-      borderTop: '1px solid #404040',
-      boxShadow: '0 -5px 15px rgba(0, 0, 0, 0.1)',
-      width: '100%',
-      boxSizing: 'border-box',
+      background: "#f9f9f9",       // Light white background
+      color: "#333",
+      padding: "2rem 1rem 1.5rem",
+      fontFamily: "'Segoe UI', 'Roboto', Arial, sans-serif",
+      borderTop: "1px solid #ddd",
+      width: "100%",
+      marginTop: "auto",
+      boxSizing: "border-box",
     },
-    
+
     footerContent: {
-      maxWidth: '1200px',
-      margin: '0 auto',
-      padding: '0 0.5rem',
+      maxWidth: "1200px",
+      margin: "0 auto",
+      padding: "0 0.5rem",
     },
-    
+
     footerSection: {
-      display: 'flex',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      paddingBottom: '1.5rem',
-      borderBottom: '1px solid #444',
-      marginBottom: '1.5rem',
-      flexDirection: 'row',
+      display: "flex",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      paddingBottom: "1.5rem",
+      borderBottom: "1px solid #e0e0e0",
+      marginBottom: "1.5rem",
+      flexDirection: "row",
     },
-    
+
     poweredBy: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'flex-start',
-      marginBottom: '1.5rem',
-      minWidth: '200px',
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "flex-start",
+      marginBottom: "1.5rem",
+      minWidth: "200px",
     },
-    
+
     poweredText: {
-      fontSize: '0.85rem',
-      color: '#b0b0b0',
-      letterSpacing: '0.5px',
-      marginBottom: '0.3rem',
+      fontSize: "0.85rem",
+      color: "#777",
+      letterSpacing: "0.5px",
+      marginBottom: "0.3rem",
     },
-    
+
     companyName: {
-      fontSize: '2rem',
-      fontWeight: '700',
-      background: 'linear-gradient(90deg, #a0a0a0, #d4d4d4)',
-      WebkitBackgroundClip: 'text',
-      backgroundClip: 'text',
-      color: 'transparent',
-      letterSpacing: '1px',
-      textShadow: '0 2px 4px rgba(0, 0, 0, 0.2)',
-      lineHeight: '1.2',
+      fontSize: "2rem",
+      fontWeight: "700",
+      color: "#333",
+      letterSpacing: "1px",
+      lineHeight: "1.2",
     },
-    
+
     addressSection: {
-      maxWidth: '280px',
-      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-      padding: '1rem 1.2rem',
-      borderRadius: '8px',
-      borderLeft: '3px solid #808080',
-      marginTop: '0',
+      maxWidth: "280px",
+      backgroundColor: "#ffffff",
+      padding: "1rem 1.2rem",
+      borderRadius: "8px",
+      borderLeft: "3px solid #999",
+      marginTop: "0",
     },
-    
+
     addressTitle: {
-      fontSize: '1rem',
-      fontWeight: '600',
-      marginBottom: '0.8rem',
-      color: '#d8d8d8',
-      letterSpacing: '0.5px',
+      fontSize: "1rem",
+      fontWeight: "600",
+      marginBottom: "0.8rem",
+      color: "#333",
     },
-    
+
     addressText: {
-      lineHeight: '1.6',
-      color: '#b8b8b8',
-      fontSize: '0.9rem',
-      margin: '0',
+      lineHeight: "1.6",
+      color: "#555",
+      fontSize: "0.9rem",
+      margin: "0",
     },
-    
+
     footerBottom: {
-      display: 'flex',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      gap: '0.5rem',
+      display: "flex",
+      flexWrap: "wrap",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: "0.5rem",
     },
-    
+
     copyright: {
-      color: '#aaa',
-      fontSize: '0.85rem',
-      margin: '0.5rem 0',
-      flex: '1',
-      minWidth: '250px',
+      color: "#555",
+      fontSize: "0.85rem",
+      margin: "0.5rem 0",
+      flex: "1",
+      minWidth: "250px",
     },
-    
+
     footerLinks: {
-      display: 'flex',
-      gap: '1rem',
-      flexWrap: 'wrap',
-      justifyContent: 'flex-end',
+      display: "flex",
+      gap: "1rem",
+      flexWrap: "wrap",
+      justifyContent: "flex-end",
     },
-    
+
     footerLink: {
-      color: '#c0c0c0',
-      textDecoration: 'none',
-      fontSize: '0.85rem',
-      transition: 'all 0.3s ease',
-      position: 'relative',
-      paddingBottom: '2px',
-      whiteSpace: 'nowrap',
+      color: "#444",
+      textDecoration: "none",
+      fontSize: "0.85rem",
+      transition: "all 0.3s ease",
     },
-    
-    footerLinkHover: {
-      color: '#ffffff',
+
+    iconRow: {
+      display: "flex",
+      gap: "15px",
+      marginTop: "15px",
+      alignItems: "center",
     },
-    
-    // Mobile-specific styles
+
+    icon: {
+      fontSize: "1.5rem",
+      color: "#1877F2", // Facebook Blue
+      cursor: "pointer",
+      transition: "0.3s",
+    },
+
+    iconHover: {
+      color: "#0e5cbd",
+    },
+
+    // MOBILE
     mobileStyles: {
-      footerContainer: {
-        padding: '1.5rem 0.8rem 1rem',
-      },
-      
       footerSection: {
-        flexDirection: 'column',
-        alignItems: 'center',
-        textAlign: 'center',
+        flexDirection: "column",
+        alignItems: "center",
+        textAlign: "center",
       },
-      
+
       poweredBy: {
-        alignItems: 'center',
-        marginBottom: '1.5rem',
+        alignItems: "center",
+        marginBottom: "1.5rem",
       },
-      
-      companyName: {
-        fontSize: '1.8rem',
-      },
-      
-      addressSection: {
-        maxWidth: '100%',
-        width: '100%',
-        boxSizing: 'border-box',
-        marginTop: '0.5rem',
-      },
-      
+
       footerBottom: {
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '1rem',
-        textAlign: 'center',
+        flexDirection: "column",
+        alignItems: "center",
+        textAlign: "center",
       },
-      
+
       footerLinks: {
-        justifyContent: 'center',
-        gap: '1rem',
+        justifyContent: "center",
       },
-      
-      copyright: {
-        textAlign: 'center',
-        minWidth: 'auto',
-      },
-    }
+    },
   };
 
-  // Check for mobile screen size
+  // Mobile check
   const isMobile = window.innerWidth <= 768;
-  
-  // Merge styles based on screen size
-  const getStyle = (baseStyle, mobileStyle) => {
-    return isMobile ? { ...baseStyle, ...mobileStyle } : baseStyle;
-  };
+
+  const getStyle = (base, mobile) => (isMobile ? { ...base, ...mobile } : base);
 
   return (
-    <footer style={getStyle(styles.footerContainer, styles.mobileStyles.footerContainer)}>
+    <footer style={styles.footerContainer}>
       <div style={styles.footerContent}>
         <div style={getStyle(styles.footerSection, styles.mobileStyles.footerSection)}>
+          
+          {/* LEFT SECTION */}
           <div style={getStyle(styles.poweredBy, styles.mobileStyles.poweredBy)}>
             <span style={styles.poweredText}>Powered by</span>
-            <span style={getStyle(styles.companyName, styles.mobileStyles.companyName)}>Kagafatech</span>
+            <span style={styles.companyName}>Kagafatech</span>
+
+            {/* Social Media */}
+            <div style={styles.iconRow}>
+              <FaFacebook
+                style={styles.icon}
+                onMouseEnter={(e) => (e.target.style.color = styles.iconHover.color)}
+                onMouseLeave={(e) => (e.target.style.color = styles.icon.color)}
+              />
+            </div>
           </div>
-          
+
+          {/* ADDRESS */}
           <div style={getStyle(styles.addressSection, styles.mobileStyles.addressSection)}>
             <h3 style={styles.addressTitle}>Penden Office</h3>
             <p style={styles.addressText}>
@@ -192,36 +186,17 @@ const Footer = () => {
             </p>
           </div>
         </div>
-        
+
+        {/* BOTTOM */}
         <div style={getStyle(styles.footerBottom, styles.mobileStyles.footerBottom)}>
-          <p style={getStyle(styles.copyright, styles.mobileStyles.copyright)}>
-            &copy; {new Date().getFullYear()} Kagafatech. All rights reserved.
+          <p style={styles.copyright}>
+            © {new Date().getFullYear()} Kagafatech. All rights reserved.
           </p>
+
           <div style={getStyle(styles.footerLinks, styles.mobileStyles.footerLinks)}>
-            <a 
-              href="/privacy" 
-              style={styles.footerLink}
-              onMouseEnter={(e) => e.target.style.color = styles.footerLinkHover.color}
-              onMouseLeave={(e) => e.target.style.color = styles.footerLink.color}
-            >
-              Privacy Policy
-            </a>
-            <a 
-              href="/terms" 
-              style={styles.footerLink}
-              onMouseEnter={(e) => e.target.style.color = styles.footerLinkHover.color}
-              onMouseLeave={(e) => e.target.style.color = styles.footerLink.color}
-            >
-              Terms of Service
-            </a>
-            <a 
-              href="/contact" 
-              style={styles.footerLink}
-              onMouseEnter={(e) => e.target.style.color = styles.footerLinkHover.color}
-              onMouseLeave={(e) => e.target.style.color = styles.footerLink.color}
-            >
-              Contact Us
-            </a>
+            <a href="/privacy" style={styles.footerLink}>Privacy Policy</a>
+            <a href="/terms" style={styles.footerLink}>Terms of Service</a>
+            <a href="/contact" style={styles.footerLink}>Contact Us</a>
           </div>
         </div>
       </div>
