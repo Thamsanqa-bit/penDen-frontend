@@ -530,7 +530,7 @@ export default function Home() {
       {/* WhatsApp Floating Button - Mobile Only */}
       <div className="md:hidden fixed right-4 bottom-1/2 transform translate-y-1/2 z-50">
         <a
-          href="https://wa.me/0815244505" // Replace with your WhatsApp number
+          href="https://wa.me/+27677854602" // Replace with your WhatsApp number
           target="_blank"
           rel="noopener noreferrer"
           className="
