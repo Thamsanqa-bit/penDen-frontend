@@ -104,7 +104,7 @@ if (window.location.hostname.includes('penden.store')) {
 
           {/* Facebook Icon - Black */}
           <a
-            href="#"
+            href="https://www.facebook.com/share/1XuJaF2gz2/"
             aria-label="Facebook"
             className="text-black text-2xl hover:text-gray-700 transition transform group-hover:scale-110 duration-200"
           >
@@ -117,12 +117,12 @@ if (window.location.hostname.includes('penden.store')) {
         <div className="text-center">
           <p className="text-sm">
             <a
-              href="https://maps.google.com/?q=31+CR+Swart+Drive+Wilpark"
+              href="https://maps.google.com/?q=31+CR+Swart+Drive+Wilropark"
               target="_blank"
               rel="noopener noreferrer"
               className="font-bold text-black hover:text-gray-700 transition hover:underline"
             >
-              31 CR, Swart Drive, Wilpark
+              31 CR, Swart Drive, Wilropark
             </a>
           </p>
         </div>
